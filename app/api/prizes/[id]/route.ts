@@ -3,9 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     if (!supabase) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -30,7 +31,7 @@ export async function PATCH(
     const { data: existing, error: fetchError } = await supabase
       .from('prizes')
       .select('id, teacher_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (fetchError || !existing) {
@@ -72,7 +73,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('prizes')
       .update(updates)
-      .eq('id', params.id)
+      .eq('id', id)
       .select('*')
       .single();
 
@@ -101,9 +102,10 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     if (!supabase) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -127,7 +129,7 @@ export async function DELETE(
     const { data: existing, error: fetchError } = await supabase
       .from('prizes')
       .select('id, teacher_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (fetchError || !existing) {
@@ -141,7 +143,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('prizes')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) {
       return NextResponse.json({ error: 'Failed to delete prize' }, { status: 500 });

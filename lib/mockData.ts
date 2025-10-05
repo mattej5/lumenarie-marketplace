@@ -251,8 +251,9 @@ const generateTransactions = (): Transaction[] => {
     for (let i = 0; i < transactionCount; i++) {
       const daysAgo = Math.floor(Math.random() * 60);
       const type: Transaction['type'] =
-        Math.random() > 0.7 ? 'withdrawal' :
-        Math.random() > 0.5 ? 'deposit' : 'adjustment';
+        Math.random() > 0.75 ? 'withdrawal' :
+        Math.random() > 0.6 ? 'deposit' :
+        Math.random() > 0.5 ? 'prize-redemption' : 'adjustment';
 
       const amount = type === 'deposit'
         ? Math.floor(Math.random() * 150) + 25
@@ -275,9 +276,13 @@ const generateTransactions = (): Transaction[] => {
           'Positive attitude',
         ],
         withdrawal: [
-          'Requested prize redemption',
           'Late homework',
           'Missing assignment',
+        ],
+        'prize-redemption': [
+          'Requested prize redemption',
+          'Prize: Stickers',
+          'Prize: Homework Pass',
         ],
         adjustment: [
           'Balance correction',

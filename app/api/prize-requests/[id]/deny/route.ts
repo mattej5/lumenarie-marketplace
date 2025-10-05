@@ -4,9 +4,10 @@ import { denyPrizeRequest } from '@/lib/services/prize-requests';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: requestId } = await params;
     const supabase = await createClient();
     if (!supabase) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -35,8 +36,6 @@ export async function POST(
     if (!reviewNotes?.trim()) {
       return NextResponse.json({ error: 'Review notes are required' }, { status: 400 });
     }
-
-    const requestId = params.id;
 
     // Deny prize request
     await denyPrizeRequest(requestId, reviewNotes);

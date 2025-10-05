@@ -38,7 +38,7 @@ export async function getGoals(filters?: {
 
   // Fetch class mappings for these goals
   const ids = (data || []).map((g: any) => g.id);
-  let classIdsByGoal = new Map<string, string[]>();
+  const classIdsByGoal = new Map<string, string[]>();
   if (ids.length > 0) {
     const { data: mapRows2 } = await supabase
       .from('goal_classes')

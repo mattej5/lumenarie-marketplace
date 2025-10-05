@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { addStudentToClass } from '@/lib/services/classes';
 
 export async function POST(request: Request) {
   try {

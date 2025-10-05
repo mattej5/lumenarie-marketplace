@@ -4,9 +4,10 @@ import { approvePrizeRequest } from '@/lib/services/prize-requests';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: requestId } = await params;
     const supabase = await createClient();
     if (!supabase) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -31,8 +32,6 @@ export async function POST(
 
     const body = await request.json();
     const { reviewNotes } = body;
-
-    const requestId = params.id;
 
     // Approve prize request (this will also create transaction and deduct balance)
     await approvePrizeRequest(requestId, reviewNotes);
