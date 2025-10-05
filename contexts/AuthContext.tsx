@@ -61,52 +61,63 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     const initAuth = async () => {
       console.log('[AuthContext] Initializing auth. useRealAuth:', useRealAuth, 'useMockAuth:', useMockAuth);
 
-      if (useRealAuth && supabase) {
-        // Real Supabase auth
-        console.log('[AuthContext] Getting session...');
-        const { data: { session } } = await supabase.auth.getSession();
+      try {
+        if (useRealAuth && supabase) {
+          // Real Supabase auth
+          console.log('[AuthContext] Getting session...');
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (session?.user) {
-          console.log('[AuthContext] Session found:', session.user.id);
-          const profile = await fetchProfile(session.user);
-          setUser(profile);
-          console.log('[AuthContext] User set:', profile);
-        } else {
-          console.log('[AuthContext] No session found');
-        }
+          if (sessionError) {
+            console.error('[AuthContext] Session error:', sessionError);
+            setIsLoading(false);
+            return;
+          }
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
-            if (session?.user) {
-              const profile = await fetchProfile(session.user);
-              setUser(profile);
-              console.log('[AuthContext] User updated:', profile);
-            } else {
-              console.log('[AuthContext] User cleared');
-              setUser(null);
+          if (session?.user) {
+            console.log('[AuthContext] Session found:', session.user.id);
+            const profile = await fetchProfile(session.user);
+            setUser(profile);
+            console.log('[AuthContext] User set:', profile);
+          } else {
+            console.log('[AuthContext] No session found');
+          }
+
+          // Listen for auth changes
+          const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+              console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
+              if (session?.user) {
+                const profile = await fetchProfile(session.user);
+                setUser(profile);
+                console.log('[AuthContext] User updated:', profile);
+              } else {
+                console.log('[AuthContext] User cleared');
+                setUser(null);
+              }
+            }
+          );
+
+          setIsLoading(false);
+          console.log('[AuthContext] Auth initialized');
+          return () => subscription.unsubscribe();
+        } else if (useMockAuth) {
+          // Mock auth (development fallback)
+          console.log('[AuthContext] Using mock auth');
+          const storedUserId = localStorage.getItem('mockUserId');
+          if (storedUserId) {
+            const foundUser = mockUsers.find(u => u.id === storedUserId);
+            if (foundUser) {
+              setUser(foundUser);
+              console.log('[AuthContext] Mock user set:', foundUser.id);
             }
           }
-        );
-
-        setIsLoading(false);
-        console.log('[AuthContext] Auth initialized');
-        return () => subscription.unsubscribe();
-      } else if (useMockAuth) {
-        // Mock auth (development fallback)
-        console.log('[AuthContext] Using mock auth');
-        const storedUserId = localStorage.getItem('mockUserId');
-        if (storedUserId) {
-          const foundUser = mockUsers.find(u => u.id === storedUserId);
-          if (foundUser) {
-            setUser(foundUser);
-            console.log('[AuthContext] Mock user set:', foundUser.id);
-          }
+          setIsLoading(false);
+        } else {
+          console.log('[AuthContext] No auth method configured');
+          setIsLoading(false);
         }
-        setIsLoading(false);
-      } else {
-        console.log('[AuthContext] No auth method configured');
+      } catch (error) {
+        console.error('[AuthContext] Error initializing auth:', error);
         setIsLoading(false);
       }
     };

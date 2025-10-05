@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
-import { mockUsers } from '@/lib/mockData';
 
 export default function LoginPage() {
-  const { user, isLoading, signIn, signInWithGoogle } = useAuth();
+  const { user, isLoading, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -30,13 +29,6 @@ export default function LoginPage() {
       await signInWithGoogle();
     } catch (error) {
       console.error('Google sign in failed:', error);
-    }
-  };
-
-  const handleMockLogin = async (userId: string) => {
-    const mockUser = mockUsers.find(u => u.id === userId);
-    if (mockUser) {
-      await signIn(mockUser.email);
     }
   };
 
@@ -86,7 +78,7 @@ export default function LoginPage() {
           {/* Google Sign In Button */}
           <button
             onClick={handleGoogleSignIn}
-            className="w-full bg-white text-gray-800 font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors mb-6"
+            className="w-full bg-white text-gray-800 font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -108,57 +100,6 @@ export default function LoginPage() {
             </svg>
             Continue with Google
           </button>
-
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-space-900 text-gray-400">
-                Mock Login (Development)
-              </span>
-            </div>
-          </div>
-
-          {/* Mock User Selector */}
-          <div className="space-y-3">
-            <button
-              onClick={() => handleMockLogin('teacher-1')}
-              className="w-full glass hover:glass-strong py-3 px-4 rounded-lg transition-all hover:shadow-cosmic flex items-center gap-3"
-            >
-              <span className="text-2xl">🌟</span>
-              <div className="text-left">
-                <div className="font-medium">Dr. Nova Sterling</div>
-                <div className="text-sm text-gray-400">Teacher Account</div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleMockLogin('student-1')}
-              className="w-full glass hover:glass-strong py-3 px-4 rounded-lg transition-all hover:shadow-aurora flex items-center gap-3"
-            >
-              <span className="text-2xl">🌙</span>
-              <div className="text-left">
-                <div className="font-medium">Luna Eclipse</div>
-                <div className="text-sm text-gray-400">Student Account</div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleMockLogin('student-2')}
-              className="w-full glass hover:glass-strong py-3 px-4 rounded-lg transition-all hover:shadow-starlight flex items-center gap-3"
-            >
-              <span className="text-2xl">⭐</span>
-              <div className="text-left">
-                <div className="font-medium">Orion Starfield</div>
-                <div className="text-sm text-gray-400">Student Account</div>
-              </div>
-            </button>
-          </div>
-
-          <p className="text-xs text-gray-500 text-center mt-6">
-            This is a mock authentication system. In production, this will use Supabase Auth.
-          </p>
         </motion.div>
 
         <p className="text-center text-gray-400 text-sm mt-8">
