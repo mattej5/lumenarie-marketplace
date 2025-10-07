@@ -51,6 +51,31 @@ export async function GET(request: Request) {
     user.email?.split('@')[0] ??
     'Student';
 
+  // Look up existing role so we never downgrade teachers to students
+  const {
+    data: existingProfile,
+    error: existingProfileError,
+  } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (existingProfileError && existingProfileError.code !== 'PGRST116') {
+    console.error('[Callback] profile fetch error:', existingProfileError.message);
+  }
+
+  const metadataRole = typeof user.user_metadata?.role === 'string'
+    ? (user.user_metadata.role as string).toLowerCase()
+    : null;
+
+  let roleToPersist: 'student' | 'teacher' = 'student';
+  if (existingProfile?.role === 'teacher' || existingProfile?.role === 'student') {
+    roleToPersist = existingProfile.role;
+  } else if (metadataRole === 'teacher' || metadataRole === 'student') {
+    roleToPersist = metadataRole;
+  }
+
   // Atomic profile write. Ensure RLS allows auth users to upsert their own row.
   const { error: profileErr } = await supabase
     .from('profiles')
@@ -59,8 +84,7 @@ export async function GET(request: Request) {
         id: user.id,
         email: user.email,
         name,
-        // preserve role if present by not overwriting when row exists
-        role: 'student',
+        role: roleToPersist,
         avatar: user.user_metadata?.avatar_url ?? null,
         updated_at: new Date().toISOString(),
       },
