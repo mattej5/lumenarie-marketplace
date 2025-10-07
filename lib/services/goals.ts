@@ -1,11 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { Goal } from '@/lib/types';
 
-export async function getGoals(filters?: {
+export type GoalFilters = {
   available?: boolean;
   classId?: string;
+  classIds?: string[];
   teacherId?: string;
-}): Promise<Goal[]> {
+};
+
+export async function getGoals(filters?: GoalFilters): Promise<Goal[]> {
   const supabase = await createClient();
   if (!supabase) throw new Error('Supabase client not configured');
 
@@ -14,18 +17,25 @@ export async function getGoals(filters?: {
   if (filters?.available !== undefined) query = query.eq('available', filters.available);
   if (filters?.teacherId) query = query.eq('teacher_id', filters.teacherId);
 
-  // If filtering by class, do a two-step query via goal_classes
-  let goalIdsForClass: string[] | null = null;
-  if (filters?.classId) {
+  // If filtering by class/classes, do a two-step query via goal_classes
+  const classFilters = new Set<string>();
+  if (filters?.classId) classFilters.add(filters.classId);
+  if (filters?.classIds) {
+    filters.classIds.filter(Boolean).forEach((cid) => classFilters.add(cid));
+  }
+
+  if (classFilters.size > 0) {
     const { data: mapRows, error: mapErr } = await supabase
       .from('goal_classes')
       .select('goal_id')
-      .eq('class_id', filters.classId);
+      .in('class_id', Array.from(classFilters));
     if (mapErr) {
       console.error('Error fetching goal_classes:', mapErr);
       return [];
     }
-    goalIdsForClass = (mapRows || []).map((r: any) => r.goal_id);
+    const goalIdsForClass = Array.from(
+      new Set((mapRows || []).map((r: any) => r.goal_id))
+    );
     if (goalIdsForClass.length === 0) return [];
     query = query.in('id', goalIdsForClass);
   }

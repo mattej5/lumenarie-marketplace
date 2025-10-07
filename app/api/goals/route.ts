@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getGoals, createGoal } from '@/lib/services/goals';
+import { getGoals, createGoal, GoalFilters } from '@/lib/services/goals';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,10 +15,49 @@ export async function GET(request: NextRequest) {
     const classId = searchParams.get('classId');
     const teacherId = searchParams.get('teacherId');
 
-    const filters: any = {};
+    const filters: GoalFilters = {};
     if (available !== null) filters.available = available === 'true';
-    if (classId) filters.classId = classId;
     if (teacherId) filters.teacherId = teacherId;
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Goals GET profile error:', profileError);
+      return NextResponse.json({ error: 'Failed to resolve profile' }, { status: 500 });
+    }
+
+    if (profile?.role === 'student') {
+      const { data: memberships, error: membershipsError } = await supabase
+        .from('class_memberships')
+        .select('class_id')
+        .eq('student_id', user.id);
+
+      if (membershipsError) {
+        console.error('Goals GET memberships error:', membershipsError);
+        return NextResponse.json({ error: 'Failed to fetch class memberships' }, { status: 500 });
+      }
+
+      const memberClassIds = (memberships || []).map((m: any) => m.class_id);
+
+      if (memberClassIds.length === 0) {
+        return NextResponse.json({ goals: [] }, { status: 200 });
+      }
+
+      if (classId) {
+        if (!memberClassIds.includes(classId)) {
+          return NextResponse.json({ goals: [] }, { status: 200 });
+        }
+        filters.classId = classId;
+      } else {
+        filters.classIds = memberClassIds;
+      }
+    } else if (classId) {
+      filters.classId = classId;
+    }
 
     const goals = await getGoals(filters);
     return NextResponse.json({ goals }, { status: 200 });
