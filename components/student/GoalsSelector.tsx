@@ -23,8 +23,14 @@ export default function GoalsSelector({ classId }: Readonly<{ classId: string }>
 
   const loadData = async () => {
     try {
+      if (!classId) {
+        setGoals([]);
+        setLoading(false);
+        return;
+      }
+
       // Load goals
-      const goalsRes = await fetch(`/api/goals?available=true`);
+      const goalsRes = await fetch(`/api/goals?available=true&classId=${encodeURIComponent(classId)}`);
       if (goalsRes.ok) {
         const data = await goalsRes.json();
         const items = (data.goals || []).map((g: any) => ({ id: g.id, title: g.title }));

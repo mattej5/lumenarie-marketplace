@@ -6,6 +6,7 @@ import { X, Plus, Minus, Save } from 'lucide-react';
 import { User, Account } from '@/lib/types';
 import { formatCurrencyShort } from '@/lib/currency';
 import toast from 'react-hot-toast';
+import { showSuccess } from '@/lib/ui/snackbar';
 
 interface BalanceManagementModalProps {
   isOpen: boolean;
@@ -69,10 +70,10 @@ export default function BalanceManagementModal({
       }
 
       const verb = transactionType === 'deposit' ? 'added to' : 'deducted from';
-      toast.success(
-        `${numAmount} ${account.currency === 'star-credits' ? '⭐' : '🌍'} ${verb} ${student.name}'s account!`,
-        { duration: 5000 }
+      showSuccess(
+        `${numAmount} ${account.currency} ${verb} ${student.name}'s account`
       );
+
 
       // Reset form
       setAmount('');
