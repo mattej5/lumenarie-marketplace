@@ -9,6 +9,7 @@ type Goal = {
   id: string;
   title: string;
   helper?: string;
+  classIds: string[];
 };
 
 export default function GoalsSelector({ classId }: Readonly<{ classId: string }>) {
@@ -33,16 +34,23 @@ export default function GoalsSelector({ classId }: Readonly<{ classId: string }>
       const goalsRes = await fetch(`/api/goals?available=true&classId=${encodeURIComponent(classId)}`);
       if (goalsRes.ok) {
         const data = await goalsRes.json();
-        const items = (data.goals || []).map((g: any) => ({ id: g.id, title: g.title }));
+        const items = (data.goals || [])
+          .map((g: any) => ({
+            id: g.id,
+            title: g.title,
+            helper: g.description || g.helper,
+            classIds: Array.isArray(g.classIds) ? g.classIds : [],
+          }))
+          .filter((goal: Goal) => goal.classIds.includes(classId));
         setGoals(items);
       } else {
         // fallback to defaults
         setGoals([
-          { id: 'hw', title: 'Completed homework on time' },
-          { id: 'help', title: 'Helped a classmate learn a concept' },
-          { id: 'participate', title: 'Participated in class discussion' },
-          { id: 'cleanup', title: 'Cleaned up lab/work area' },
-          { id: 'improve', title: 'Improved quiz or assignment score' },
+          { id: 'hw', title: 'Completed homework on time', classIds: [classId] },
+          { id: 'help', title: 'Helped a classmate learn a concept', classIds: [classId] },
+          { id: 'participate', title: 'Participated in class discussion', classIds: [classId] },
+          { id: 'cleanup', title: 'Cleaned up lab/work area', classIds: [classId] },
+          { id: 'improve', title: 'Improved quiz or assignment score', classIds: [classId] },
         ]);
       }
 
@@ -78,11 +86,11 @@ export default function GoalsSelector({ classId }: Readonly<{ classId: string }>
     } catch (err) {
       console.error('Error loading goals:', err);
       setGoals([
-        { id: 'hw', title: 'Completed homework on time' },
-        { id: 'help', title: 'Helped a classmate learn a concept' },
-        { id: 'participate', title: 'Participated in class discussion' },
-        { id: 'cleanup', title: 'Cleaned up lab/work area' },
-        { id: 'improve', title: 'Improved quiz or assignment score' },
+        { id: 'hw', title: 'Completed homework on time', classIds: [classId] },
+        { id: 'help', title: 'Helped a classmate learn a concept', classIds: [classId] },
+        { id: 'participate', title: 'Participated in class discussion', classIds: [classId] },
+        { id: 'cleanup', title: 'Cleaned up lab/work area', classIds: [classId] },
+        { id: 'improve', title: 'Improved quiz or assignment score', classIds: [classId] },
       ]);
     } finally {
       setLoading(false);

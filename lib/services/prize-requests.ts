@@ -10,7 +10,8 @@ export async function createPrizeRequest(
   studentId: string,
   prizeId: string,
   classId: string,
-  reason?: string
+  reason?: string,
+  customAmount?: number
 ): Promise<PrizeRequest | null> {
   const supabase = await createClient();
   if (!supabase) throw new Error('Supabase client not configured');
@@ -26,6 +27,15 @@ export async function createPrizeRequest(
     throw new Error('Prize not found');
   }
 
+  // Determine the effective cost
+  const isCrowdfunded = prize.cost === 0;
+  const effectiveCost = isCrowdfunded && customAmount !== undefined ? customAmount : prize.cost;
+
+  // Validate custom amount for crowdfunded prizes
+  if (isCrowdfunded && (customAmount === undefined || customAmount < 2)) {
+    throw new Error('Crowdfunded prizes require a custom amount of at least 2');
+  }
+
   // Get student's account
   const { data: account } = await supabase
     .from('accounts')
@@ -39,7 +49,7 @@ export async function createPrizeRequest(
   }
 
   // Check if student can afford the prize
-  if (account.balance < prize.cost) {
+  if (account.balance < effectiveCost) {
     throw new Error('Insufficient balance');
   }
 
@@ -58,6 +68,7 @@ export async function createPrizeRequest(
       prize_id: prizeId,
       class_id: classId,
       prize_cost: prize.cost,
+      custom_amount: isCrowdfunded ? customAmount : null,
       reason,
       status: 'pending',
     })
@@ -69,13 +80,13 @@ export async function createPrizeRequest(
     return null;
   }
 
-  // Immediately deduct the balance
+  // Immediately deduct the balance (use effective cost)
   const { error: txError } = await supabase.rpc('create_transaction', {
     p_account_id: account.id,
     p_type: 'prize-redemption',
-    p_amount: prize.cost,
-    p_reason: `Prize request: ${prize.name}`,
-    p_notes: `Prize request ID: ${data.id}`,
+    p_amount: effectiveCost,
+    p_reason: `Prize request: ${prize.name}${isCrowdfunded ? ' (Crowdfunded)' : ''}`,
+    p_notes: `Prize request ID: ${data.id}${isCrowdfunded ? ` - Custom amount: ${customAmount}` : ''}`,
   });
 
   if (txError) {
@@ -201,7 +212,7 @@ export async function denyPrizeRequest(
   // Get the prize request details
   const { data: request, error: fetchError } = await supabase
     .from('prize_requests')
-    .select('student_id, class_id, prize_cost, prize:prizes(name)')
+    .select('student_id, class_id, prize_cost, custom_amount, prize:prizes(name)')
     .eq('id', requestId)
     .single();
 
@@ -221,11 +232,14 @@ export async function denyPrizeRequest(
     throw new Error('Student account not found');
   }
 
+  // Determine the refund amount (use custom_amount if it exists, otherwise prize_cost)
+  const refundAmount = request.custom_amount || request.prize_cost;
+
   // Refund the amount back to the student
   const { error: txError } = await supabase.rpc('create_transaction', {
     p_account_id: account.id,
     p_type: 'deposit',
-    p_amount: request.prize_cost,
+    p_amount: refundAmount,
     p_reason: `Prize request denied: ${(request.prize as any)?.name || 'Unknown'}`,
     p_notes: `Refund for denied request. Reason: ${reviewNotes}`,
   });

@@ -19,6 +19,7 @@ interface StudentDashboardProps {
   prizes: Prize[];
   prizeRequests: PrizeRequest[];
   classId: string;
+  className: string;
 }
 
 export default function StudentDashboard({
@@ -28,6 +29,7 @@ export default function StudentDashboard({
   prizes,
   prizeRequests,
   classId,
+  className,
 }: Readonly<StudentDashboardProps>) {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -60,7 +62,7 @@ export default function StudentDashboard({
               )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Welcome, {user.name}!</h1>
+              <h1 className="text-2xl font-bold">Welcome to {className}, {user.name}!</h1>
               <p className="text-sm text-gray-400">Student Dashboard</p>
             </div>
           </div>
@@ -81,17 +83,17 @@ export default function StudentDashboard({
         <div className="lg:col-span-2 space-y-6">
           <BalanceCard account={account} />
           <TransactionHistory transactions={transactions.slice(0, 10)} currency={account.currency} />
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          <GoalsSelector classId={classId} />
           <PrizeRequestForm
             prizes={prizes}
             currency={account.currency}
             currentBalance={account.balance}
             classId={classId}
           />
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          <GoalsSelector classId={classId} />
           <PendingRequests requests={prizeRequests} currency={account.currency} />
         </div>
       </div>

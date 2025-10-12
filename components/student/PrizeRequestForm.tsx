@@ -14,20 +14,30 @@ interface PrizeRequestFormProps {
   classId: string;
 }
 
-export default function PrizeRequestForm({ prizes, currency, currentBalance, classId }: PrizeRequestFormProps) {
+export default function PrizeRequestForm({ prizes, currency, currentBalance, classId }: Readonly<PrizeRequestFormProps>) {
   const [selectedPrize, setSelectedPrize] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customAmount, setCustomAmount] = useState<number>(2);
   const { shootingStars } = useConfetti();
 
-  const availablePrizes = prizes.filter(p => p.available);
+  const availablePrizes = prizes.filter(
+    (p) => p.available && (!p.classId || p.classId === classId)
+  );
   const selectedPrizeData = availablePrizes.find(p => p.id === selectedPrize);
-  const canAfford = selectedPrizeData ? currentBalance >= selectedPrizeData.cost : false;
+  const isCrowdfunded = selectedPrizeData?.cost === 0;
+  const effectiveCost = isCrowdfunded ? customAmount : (selectedPrizeData?.cost || 0);
+  const canAfford = selectedPrizeData ? currentBalance >= effectiveCost : false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedPrize || !selectedPrizeData) {
       toast.error('Please select a prize');
+      return;
+    }
+
+    if (isCrowdfunded && customAmount < 2) {
+      toast.error('Minimum contribution is 2');
       return;
     }
 
@@ -47,6 +57,7 @@ export default function PrizeRequestForm({ prizes, currency, currentBalance, cla
         body: JSON.stringify({
           prizeId: selectedPrize,
           classId,
+          customAmount: isCrowdfunded ? customAmount : undefined,
         }),
       });
 
@@ -64,6 +75,7 @@ export default function PrizeRequestForm({ prizes, currency, currentBalance, cla
 
       // Reset form
       setSelectedPrize('');
+      setCustomAmount(2);
 
       // Refresh to show new request and updated balance
       window.location.reload();
@@ -77,6 +89,86 @@ export default function PrizeRequestForm({ prizes, currency, currentBalance, cla
 
   const getPrizesByCategory = (category: Prize['category']) => {
     return availablePrizes.filter(p => p.category === category);
+  };
+
+  const renderPrizeName = (prize: Prize) => {
+    const isCrowdfundedPrize = prize.cost === 0;
+
+    return (
+      <div>
+        <div className="font-medium flex items-center gap-2">
+          {prize.name}
+          {isCrowdfundedPrize && (
+            <span className="text-xs bg-aurora-500/20 text-aurora-400 px-2 py-0.5 rounded-full">
+              Crowdfunded
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-gray-400">{prize.description}</div>
+      </div>
+    );
+  };
+
+  const renderPrizeCost = (prize: Prize) => {
+    const isCrowdfundedPrize = prize.cost === 0;
+    const isSelected = selectedPrize === prize.id;
+
+    if (isCrowdfundedPrize && isSelected) {
+      return (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCustomAmount(prev => Math.max(2, prev - 1));
+            }}
+            className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-white font-bold transition-colors"
+          >
+            −
+          </button>
+          <div className="text-center min-w-[80px]">
+            <div className="font-semibold text-aurora-400">
+              {customAmount} {currency === 'star-credits' ? '⭐' : '🌍'}
+            </div>
+            {customAmount >= currentBalance && (
+              <div className="text-xs text-orange-400">Max</div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCustomAmount(prev => Math.min(currentBalance, prev + 1));
+            }}
+            disabled={customAmount >= currentBalance}
+            className="w-8 h-8 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-white font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            +
+          </button>
+        </div>
+      );
+    }
+
+    if (isCrowdfundedPrize) {
+      return (
+        <div className="text-center">
+          <div className="text-aurora-400 font-semibold text-sm">
+            You choose
+          </div>
+          <div className="text-xs text-gray-400">
+            (min 2 {currency === 'star-credits' ? '⭐' : '🌍'})
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`font-semibold ${
+        currentBalance >= prize.cost ? 'text-aurora-400' : 'text-gray-500'
+      }`}>
+        {prize.cost} {currency === 'star-credits' ? '⭐' : '🌍'}
+      </div>
+    );
   };
 
   return (
@@ -117,18 +209,11 @@ export default function PrizeRequestForm({ prizes, currency, currentBalance, cla
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{prize.icon}</span>
-                        <div>
-                          <div className="font-medium">{prize.name}</div>
-                          <div className="text-xs text-gray-400">{prize.description}</div>
-                        </div>
+                        {renderPrizeName(prize)}
                       </div>
                       <div className="text-right">
-                        <div className={`font-semibold ${
-                          currentBalance >= prize.cost ? 'text-aurora-400' : 'text-gray-500'
-                        }`}>
-                          {prize.cost} {currency === 'star-credits' ? '⭐' : '🌍'}
-                        </div>
-                        {currentBalance < prize.cost && (
+                        {renderPrizeCost(prize)}
+                        {prize.cost > 0 && currentBalance < prize.cost && (
                           <div className="text-xs text-orange-400">Insufficient funds</div>
                         )}
                       </div>
@@ -160,18 +245,11 @@ export default function PrizeRequestForm({ prizes, currency, currentBalance, cla
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{prize.icon}</span>
-                        <div>
-                          <div className="font-medium">{prize.name}</div>
-                          <div className="text-xs text-gray-400">{prize.description}</div>
-                        </div>
+                        {renderPrizeName(prize)}
                       </div>
                       <div className="text-right">
-                        <div className={`font-semibold ${
-                          currentBalance >= prize.cost ? 'text-aurora-400' : 'text-gray-500'
-                        }`}>
-                          {prize.cost} {currency === 'star-credits' ? '⭐' : '🌍'}
-                        </div>
-                        {currentBalance < prize.cost && (
+                        {renderPrizeCost(prize)}
+                        {prize.cost > 0 && currentBalance < prize.cost && (
                           <div className="text-xs text-orange-400">Insufficient funds</div>
                         )}
                       </div>
@@ -203,18 +281,11 @@ export default function PrizeRequestForm({ prizes, currency, currentBalance, cla
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{prize.icon}</span>
-                        <div>
-                          <div className="font-medium">{prize.name}</div>
-                          <div className="text-xs text-gray-400">{prize.description}</div>
-                        </div>
+                        {renderPrizeName(prize)}
                       </div>
                       <div className="text-right">
-                        <div className={`font-semibold ${
-                          currentBalance >= prize.cost ? 'text-aurora-400' : 'text-gray-500'
-                        }`}>
-                          {prize.cost} {currency === 'star-credits' ? '⭐' : '🌍'}
-                        </div>
-                        {currentBalance < prize.cost && (
+                        {renderPrizeCost(prize)}
+                        {prize.cost > 0 && currentBalance < prize.cost && (
                           <div className="text-xs text-orange-400">Insufficient funds</div>
                         )}
                       </div>
@@ -251,9 +322,9 @@ export default function PrizeRequestForm({ prizes, currency, currentBalance, cla
           )}
         </motion.button>
 
-        {selectedPrizeData && !canAfford && (
+        {selectedPrizeData && !canAfford && !isCrowdfunded && (
           <p className="text-sm text-orange-400 text-center">
-            You need {selectedPrizeData.cost - currentBalance} more {currency === 'star-credits' ? '⭐' : '🌍'} to request this prize
+            You need {effectiveCost - currentBalance} more {currency === 'star-credits' ? '⭐' : '🌍'} to request this prize
           </p>
         )}
       </form>

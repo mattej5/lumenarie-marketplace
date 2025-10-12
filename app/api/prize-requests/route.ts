@@ -16,11 +16,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { prizeId, classId, reason } = body;
+    const { prizeId, classId, reason, customAmount } = body;
 
     // Validate input
     if (!prizeId || !classId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Validate customAmount if provided
+    if (customAmount !== undefined && customAmount < 2) {
+      return NextResponse.json({ error: 'Custom amount must be at least 2' }, { status: 400 });
     }
 
     // Create prize request
@@ -28,7 +33,8 @@ export async function POST(request: NextRequest) {
       user.id,
       prizeId,
       classId,
-      reason
+      reason,
+      customAmount
     );
 
     if (!prizeRequest) {
