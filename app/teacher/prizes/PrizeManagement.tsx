@@ -16,7 +16,7 @@ type EditablePrize = Partial<Prize> & { id?: string };
 
 const categories: Prize['category'][] = ['astronomy', 'earth-science', 'general'];
 
-export default function PrizeManagement({ user, classes, prizes }: Props) {
+export default function PrizeManagement({ classes, prizes }: Readonly<Props>) {
   const [items, setItems] = useState<Prize[]>(prizes);
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<'create' | 'edit'>('create');
@@ -24,11 +24,12 @@ export default function PrizeManagement({ user, classes, prizes }: Props) {
   const [form, setForm] = useState<EditablePrize | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const isCrowdfunded = form?.cost === 0;
   const isCreateValid = !!(
     form &&
     (form.name || '').toString().trim().length > 0 &&
     (form.description || '').toString().trim().length > 0 &&
-    Number(form.cost) > 0 &&
+    (Number(form.cost) > 0 || form.cost === 0) &&
     (!!form.category && categories.includes(form.category as any))
   );
 
@@ -65,7 +66,7 @@ export default function PrizeManagement({ user, classes, prizes }: Props) {
   };
 
   const submitCreate = async () => {
-    if (!form || !form.name || !form.description || !form.cost || !form.category) return;
+    if (!form || !form.name || !form.description || form.cost === undefined || !form.category) return;
     setSaving(true);
     try {
       const res = await fetch('/api/prizes', {
@@ -193,7 +194,7 @@ export default function PrizeManagement({ user, classes, prizes }: Props) {
                     onClick={() => openEdit(p)}
                   >
                     <td className="px-6 py-3 font-medium text-black">{p.name}</td>
-                    <td className="px-6 py-3 text-black">{p.cost}</td>
+                    <td className="px-6 py-3 text-black">{p.cost === 0 ? 'Crowdfunded' : p.cost}</td>
                     <td className="px-6 py-3">
                       <span className="uppercase text-xs tracking-wide bg-gray-100 text-black px-2 py-1 rounded">
                         {p.category}
@@ -249,9 +250,11 @@ export default function PrizeManagement({ user, classes, prizes }: Props) {
                   <input
                     type="number"
                     min={1}
-                    className="w-full border border-black rounded px-3 py-2 bg-white text-black placeholder-black focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black"
-                    value={Number(form?.cost || 1)}
+                    disabled={isCrowdfunded}
+                    className="w-full border border-black rounded px-3 py-2 bg-white text-black placeholder-black focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    value={isCrowdfunded ? '' : Number(form?.cost || 1)}
                     onChange={(e) => handleChange('cost', Number(e.target.value))}
+                    placeholder={isCrowdfunded ? 'Crowdfunded' : ''}
                   />
                 </div>
                 <div>
@@ -266,6 +269,18 @@ export default function PrizeManagement({ user, classes, prizes }: Props) {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="inline-flex items-center gap-2 text-black cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isCrowdfunded}
+                    onChange={(e) => handleChange('cost', e.target.checked ? 0 : 1)}
+                    className="cursor-pointer"
+                  />
+                  <span>Allow crowdfunding</span>
+                </label>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

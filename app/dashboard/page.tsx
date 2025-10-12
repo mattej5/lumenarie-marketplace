@@ -39,11 +39,14 @@ export default async function DashboardPage() {
   const classes = await getStudentClasses(user.id);
 
   // For now, use the first class (in the future, we can let students select which class)
-  const classId = classes[0]?.id;
+  const selectedClass = classes[0];
+  const classId = selectedClass?.id;
 
   if (!classId) {
     return <NotEnrolled />;
   }
+
+  const className = selectedClass?.name ?? 'your class';
 
   // Fetch all data in parallel
   const [account, transactions, prizes, prizeRequests] = await Promise.all([
@@ -72,6 +75,7 @@ export default async function DashboardPage() {
       prizes={prizes}
       prizeRequests={prizeRequests}
       classId={classId}
+      className={className}
     />
   );
 }
