@@ -117,9 +117,6 @@ export default function StudentOverviewGrid({
           className="glass-strong rounded-xl p-4"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-starlight-500/20 flex items-center justify-center">
-              <span className="text-xl">dY`?</span>
-            </div>
             <div>
               <p className="text-sm text-gray-400">Total Students</p>
               <p className="text-xl font-bold">{filteredStudents.length}</p>
@@ -132,7 +129,7 @@ export default function StudentOverviewGrid({
       <div className="glass-strong rounded-2xl p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <span>dY`"???dYZ"</span> Students
+            Your Students
           </h2>
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
@@ -163,7 +160,7 @@ export default function StudentOverviewGrid({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {sortedStudents.map((student, index) => {
             const account = getAccountForStudent(student.id);
             if (!account) return null;
@@ -198,7 +195,9 @@ export default function StudentOverviewGrid({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-base truncate">{student.name}</h3>
+                        <h3 className="font-semibold text-base break-words whitespace-normal leading-5">
+                          {student.name}
+                        </h3>
                         <p className="text-xs text-gray-400 truncate">
                           {student.email}
                         </p>
