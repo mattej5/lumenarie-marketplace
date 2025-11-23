@@ -21,13 +21,22 @@ export async function getProfileById(userId: string): Promise<User | null> {
     return null;
   }
 
+  const profileData = data as unknown as {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    avatar: string | null;
+    created_at: string;
+  };
+
   return {
-    id: data.id,
-    email: data.email,
-    name: data.name,
-    role: data.role as 'student' | 'teacher',
-    avatar: data.avatar,
-    createdAt: new Date(data.created_at),
+    id: profileData.id,
+    email: profileData.email,
+    name: profileData.name,
+    role: profileData.role as 'student' | 'teacher',
+    avatar: profileData.avatar ?? undefined,
+    createdAt: new Date(profileData.created_at),
   };
 }
 
@@ -54,13 +63,22 @@ export async function updateProfile(
     return null;
   }
 
+  const updatedProfile = data as unknown as {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    avatar: string | null;
+    created_at: string;
+  };
+
   return {
-    id: data.id,
-    email: data.email,
-    name: data.name,
-    role: data.role as 'student' | 'teacher',
-    avatar: data.avatar,
-    createdAt: new Date(data.created_at),
+    id: updatedProfile.id,
+    email: updatedProfile.email,
+    name: updatedProfile.name,
+    role: updatedProfile.role as 'student' | 'teacher',
+    avatar: updatedProfile.avatar ?? undefined,
+    createdAt: new Date(updatedProfile.created_at),
   };
 }
 
@@ -168,12 +186,21 @@ export async function getAllStudents(): Promise<User[]> {
     return [];
   }
 
-  return data.map(student => ({
+  const studentRows = (data ?? []) as unknown as Array<{
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    avatar: string | null;
+    created_at: string;
+  }>;
+
+  return studentRows.map(student => ({
     id: student.id,
     email: student.email,
     name: student.name,
     role: student.role as 'student' | 'teacher',
-    avatar: student.avatar,
+    avatar: student.avatar ?? undefined,
     createdAt: new Date(student.created_at),
   }));
 }

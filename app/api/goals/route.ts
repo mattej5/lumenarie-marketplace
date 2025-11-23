@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     if (profileError) {
       console.error('Goals GET profile error:', profileError);
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     if (!profile || profile.role !== 'teacher') {
       return NextResponse.json({ error: 'Only teachers can create goals' }, { status: 403 });
@@ -100,3 +100,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: e.message || 'Failed to create goal' }, { status: 500 });
   }
 }
+

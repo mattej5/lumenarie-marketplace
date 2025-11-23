@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     if (!profile || profile.role !== 'teacher') {
       return NextResponse.json({ error: 'Only teachers can create prizes' }, { status: 403 });
@@ -106,3 +106,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+

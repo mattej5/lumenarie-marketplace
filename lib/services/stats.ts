@@ -31,7 +31,8 @@ export async function getDashboardStats(
       .select('id')
       .eq('teacher_id', teacherId);
 
-    const classIds = classesData?.map(c => c.id) || [];
+    const classRows = (classesData ?? []) as unknown as Array<{ id: string }>;
+    const classIds = classRows.map(c => c.id);
 
     if (classIds.length === 0) {
       // No classes, return zeros
@@ -51,7 +52,8 @@ export async function getDashboardStats(
       .in('class_id', classIds);
 
     // Count unique students
-    const uniqueStudentIds = new Set(memberships?.map(m => m.student_id) || []);
+    const membershipRows = (memberships ?? []) as unknown as Array<{ student_id: string }>;
+    const uniqueStudentIds = new Set(membershipRows.map(m => m.student_id));
     totalStudents = uniqueStudentIds.size;
   }
 
@@ -67,9 +69,10 @@ export async function getDashboardStats(
 
   const { data: accounts } = await accountsQuery;
 
-  const totalFunds = accounts?.reduce((sum, acc) => sum + acc.balance, 0) || 0;
-  const averageBalance = accounts && accounts.length > 0
-    ? Math.floor(totalFunds / accounts.length)
+  const accountRows = (accounts ?? []) as unknown as Array<{ balance: number }>;
+  const totalFunds = accountRows.reduce((sum, acc) => sum + acc.balance, 0);
+  const averageBalance = accountRows.length > 0
+    ? Math.floor(totalFunds / accountRows.length)
     : 0;
 
   // Get pending requests count
@@ -136,6 +139,7 @@ export async function getStudentStats(studentId: string, classId?: string) {
   }
 
   const { data: account } = await accountQuery.single();
+  const accountData = account as unknown as { balance: number; currency: string } | null;
 
   // Get total earned (all deposits)
   let depositsQuery = supabase
@@ -149,7 +153,8 @@ export async function getStudentStats(studentId: string, classId?: string) {
   }
 
   const { data: deposits } = await depositsQuery;
-  const totalEarned = deposits?.reduce((sum, tx) => sum + tx.amount, 0) || 0;
+  const depositRows = (deposits ?? []) as unknown as Array<{ amount: number }>;
+  const totalEarned = depositRows.reduce((sum, tx) => sum + tx.amount, 0);
 
   // Get total spent (prize redemptions)
   let spentQuery = supabase
@@ -163,7 +168,8 @@ export async function getStudentStats(studentId: string, classId?: string) {
   }
 
   const { data: spent } = await spentQuery;
-  const totalSpent = spent?.reduce((sum, tx) => sum + tx.amount, 0) || 0;
+  const spentRows = (spent ?? []) as unknown as Array<{ amount: number }>;
+  const totalSpent = spentRows.reduce((sum, tx) => sum + tx.amount, 0);
 
   // Get pending requests count
   let pendingQuery = supabase
@@ -179,8 +185,8 @@ export async function getStudentStats(studentId: string, classId?: string) {
   const { count: pendingRequests } = await pendingQuery;
 
   return {
-    currentBalance: account?.balance || 0,
-    currency: account?.currency || 'star-credits',
+    currentBalance: accountData?.balance || 0,
+    currency: accountData?.currency || 'star-credits',
     totalEarned,
     totalSpent,
     pendingRequests: pendingRequests || 0,
@@ -203,9 +209,10 @@ export async function getClassStats(classId: string) {
     .select('balance')
     .eq('class_id', classId);
 
-  const totalFunds = accounts?.reduce((sum, acc) => sum + acc.balance, 0) || 0;
-  const averageBalance = accounts && accounts.length > 0
-    ? Math.floor(totalFunds / accounts.length)
+  const classAccountRows = (accounts ?? []) as unknown as Array<{ balance: number }>;
+  const totalFunds = classAccountRows.reduce((sum, acc) => sum + acc.balance, 0);
+  const averageBalance = classAccountRows.length > 0
+    ? Math.floor(totalFunds / classAccountRows.length)
     : 0;
 
   // Get transaction count

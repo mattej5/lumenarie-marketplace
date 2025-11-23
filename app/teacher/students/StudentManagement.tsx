@@ -12,7 +12,7 @@ interface Props {
   students: StudentWithClasses[];
 }
 
-export default function StudentManagement({ user, classes, students }: Props) {
+export default function StudentManagement({ user: _user, classes, students }: Props) {
   const [selectedStudent, setSelectedStudent] = useState<StudentWithClasses | User | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string>('');

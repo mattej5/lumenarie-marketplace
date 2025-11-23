@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         school_year,
         color_theme,
         active: active ?? true,
-      })
+      } as never)
       .select()
       .single();
 
@@ -144,7 +144,7 @@ export async function PUT(request: Request) {
       .from('classes')
       .select('teacher_id')
       .eq('id', id)
-      .single();
+      .single<{ teacher_id: string }>();
 
     if (!existingClass || existingClass.teacher_id !== user.id) {
       return NextResponse.json(
@@ -161,7 +161,7 @@ export async function PUT(request: Request) {
         school_year,
         color_theme,
         active,
-      })
+      } as never)
       .eq('id', id)
       .select()
       .single();
@@ -220,7 +220,7 @@ export async function DELETE(request: Request) {
       .from('classes')
       .select('teacher_id')
       .eq('id', id)
-      .single();
+      .single<{ teacher_id: string }>();
 
     if (!existingClass || existingClass.teacher_id !== user.id) {
       return NextResponse.json(
@@ -251,3 +251,5 @@ export async function DELETE(request: Request) {
     );
   }
 }
+
+

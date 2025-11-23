@@ -7,6 +7,7 @@ export const isTest = process.env.NODE_ENV === 'test';
 // Feature flags
 export const ENABLE_MOCK_AUTH = isDevelopment;
 export const ENABLE_SUPABASE_AUTH = true;
+export const FORCE_MOCK_AUTH = process.env.NEXT_PUBLIC_FORCE_MOCK_AUTH === 'true' || process.env.FORCE_MOCK_AUTH === 'true';
 
 // Supabase environment variables
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,9 +20,9 @@ export const isSupabaseConfigured = () => {
 
 // Helper to determine which auth system to use
 export const shouldUseMockAuth = () => {
-  return ENABLE_MOCK_AUTH && !isSupabaseConfigured();
+  return FORCE_MOCK_AUTH || (ENABLE_MOCK_AUTH && !isSupabaseConfigured());
 };
 
 export const shouldUseRealAuth = () => {
-  return ENABLE_SUPABASE_AUTH && isSupabaseConfigured();
+  return !FORCE_MOCK_AUTH && ENABLE_SUPABASE_AUTH && isSupabaseConfigured();
 };

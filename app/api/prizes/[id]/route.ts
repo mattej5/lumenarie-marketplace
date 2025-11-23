@@ -22,7 +22,7 @@ export async function PATCH(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     if (!profile || profile.role !== 'teacher') {
       return NextResponse.json({ error: 'Only teachers can update prizes' }, { status: 403 });
@@ -32,7 +32,7 @@ export async function PATCH(
       .from('prizes')
       .select('id, teacher_id')
       .eq('id', id)
-      .single();
+      .single<{ id: string; teacher_id: string }>();
 
     if (fetchError || !existing) {
       return NextResponse.json({ error: 'Prize not found' }, { status: 404 });
@@ -72,10 +72,9 @@ export async function PATCH(
 
     const { data, error } = await supabase
       .from('prizes')
-      .update(updates)
+      .update(updates as never)
       .eq('id', id)
-      .select('*')
-      .single();
+      .select('*').single<{ id: string; name: string; description: string | null; cost: number; category: string; icon: string | null; available: boolean; class_id: string | null; teacher_id: string | null }>();
 
     if (error || !data) {
       return NextResponse.json({ error: 'Failed to update prize' }, { status: 500 });
@@ -120,7 +119,7 @@ export async function DELETE(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     if (!profile || profile.role !== 'teacher') {
       return NextResponse.json({ error: 'Only teachers can delete prizes' }, { status: 403 });
@@ -130,7 +129,7 @@ export async function DELETE(
       .from('prizes')
       .select('id, teacher_id')
       .eq('id', id)
-      .single();
+      .single<{ id: string; teacher_id: string }>();
 
     if (fetchError || !existing) {
       return NextResponse.json({ error: 'Prize not found' }, { status: 404 });
@@ -155,4 +154,6 @@ export async function DELETE(
     return NextResponse.json({ error: error.message || 'Failed to delete prize' }, { status: 500 });
   }
 }
+
+
 

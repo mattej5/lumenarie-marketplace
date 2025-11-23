@@ -37,7 +37,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       .from('profiles')
       .select('*')
       .eq('id', supabaseUser.id)
-      .single();
+      .single<{ id: string; email: string; name: string | null; role: string; avatar: string | null; created_at: string }>();
 
     if (error || !data) {
       console.error('[AuthContext] Error fetching profile:', error);
@@ -49,9 +49,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     return {
       id: data.id,
       email: data.email,
-      name: data.name,
-      role: data.role,
-      avatar: data.avatar,
+      name: data.name || '',
+      role: data.role as User['role'],
+      avatar: data.avatar || undefined,
       createdAt: new Date(data.created_at),
     };
   };
@@ -221,3 +221,5 @@ export function useAuth() {
   }
   return context;
 }
+
+

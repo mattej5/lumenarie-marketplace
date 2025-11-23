@@ -143,3 +143,15 @@ After running the SQL files, you can test by:
 **Balance not updating:**
 - Use the `create_transaction` function instead of direct updates
 - Check that the account isn't locked by another transaction
+
+## TypeScript Types
+
+Generate strongly-typed Supabase clients from your live schema:
+
+1. Create a personal access token in Supabase (Settings > Access Tokens) and export it as `SUPABASE_ACCESS_TOKEN`.
+2. Set `SUPABASE_PROJECT_ID` to your project ref (also works with `SUPABASE_PROJECT_REF`; falls back to parsing `NEXT_PUBLIC_SUPABASE_URL`).
+3. Run `npm run supabase:types`.
+4. The generated types are written to `lib/supabase/database.types.ts` and automatically used by the client/server helpers.
+
+Re-run the command whenever the database schema changes.
+

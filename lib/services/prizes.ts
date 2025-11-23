@@ -43,16 +43,28 @@ export async function getPrizes(filters?: {
     return [];
   }
 
-  return data.map(prize => ({
+  const prizeRows = (data ?? []) as unknown as Array<{
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    category: string;
+    icon: string | null;
+    available: boolean;
+    class_id: string | null;
+    teacher_id: string | null;
+  }>;
+
+  return prizeRows.map(prize => ({
     id: prize.id,
     name: prize.name,
     description: prize.description,
     cost: prize.cost,
     category: prize.category as Prize['category'],
-    icon: prize.icon,
+    icon: prize.icon ?? '',
     available: prize.available,
-    classId: prize.class_id,
-    teacherId: prize.teacher_id,
+    classId: prize.class_id ?? undefined,
+    teacherId: prize.teacher_id ?? undefined,
   }));
 }
 
@@ -71,16 +83,28 @@ export async function getPrizeById(prizeId: string): Promise<Prize | null> {
     return null;
   }
 
+  const prizeData = data as unknown as {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    category: string;
+    icon: string | null;
+    available: boolean;
+    class_id: string | null;
+    teacher_id: string | null;
+  };
+
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    cost: data.cost,
-    category: data.category as Prize['category'],
-    icon: data.icon,
-    available: data.available,
-    classId: data.class_id,
-    teacherId: data.teacher_id,
+    id: prizeData.id,
+    name: prizeData.name,
+    description: prizeData.description,
+    cost: prizeData.cost,
+    category: prizeData.category as Prize['category'],
+    icon: prizeData.icon ?? '',
+    available: prizeData.available,
+    classId: prizeData.class_id ?? undefined,
+    teacherId: prizeData.teacher_id ?? undefined,
   };
 }
 
@@ -118,16 +142,28 @@ export async function createPrize(
     return null;
   }
 
+  const createdPrize = data as unknown as {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    category: string;
+    icon: string | null;
+    available: boolean;
+    class_id: string | null;
+    teacher_id: string | null;
+  };
+
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    cost: data.cost,
-    category: data.category as Prize['category'],
-    icon: data.icon,
-    available: data.available,
-    classId: data.class_id,
-    teacherId: data.teacher_id,
+    id: createdPrize.id,
+    name: createdPrize.name,
+    description: createdPrize.description,
+    cost: createdPrize.cost,
+    category: createdPrize.category as Prize['category'],
+    icon: createdPrize.icon ?? '',
+    available: createdPrize.available,
+    classId: createdPrize.class_id ?? undefined,
+    teacherId: createdPrize.teacher_id ?? undefined,
   };
 }
 
@@ -157,16 +193,28 @@ export async function updatePrize(
     return null;
   }
 
+  const updatedPrize = data as unknown as {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    category: string;
+    icon: string | null;
+    available: boolean;
+    class_id: string | null;
+    teacher_id: string | null;
+  };
+
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    cost: data.cost,
-    category: data.category as Prize['category'],
-    icon: data.icon,
-    available: data.available,
-    classId: data.class_id,
-    teacherId: data.teacher_id,
+    id: updatedPrize.id,
+    name: updatedPrize.name,
+    description: updatedPrize.description,
+    cost: updatedPrize.cost,
+    category: updatedPrize.category as Prize['category'],
+    icon: updatedPrize.icon ?? '',
+    available: updatedPrize.available,
+    classId: updatedPrize.class_id ?? undefined,
+    teacherId: updatedPrize.teacher_id ?? undefined,
   };
 }
 
@@ -200,10 +248,12 @@ export async function togglePrizeAvailability(prizeId: string): Promise<Prize | 
 
   if (!currentPrize) return null;
 
+  const currentPrizeData = currentPrize as unknown as { available: boolean };
+
   // Toggle availability
   const { data, error } = await supabase
     .from('prizes')
-    .update({ available: !currentPrize.available })
+    .update({ available: !currentPrizeData.available })
     .eq('id', prizeId)
     .select()
     .single();
@@ -213,15 +263,27 @@ export async function togglePrizeAvailability(prizeId: string): Promise<Prize | 
     return null;
   }
 
+  const toggledPrize = data as unknown as {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    category: string;
+    icon: string | null;
+    available: boolean;
+    class_id: string | null;
+    teacher_id: string | null;
+  };
+
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    cost: data.cost,
-    category: data.category as Prize['category'],
-    icon: data.icon,
-    available: data.available,
-    classId: data.class_id,
-    teacherId: data.teacher_id,
+    id: toggledPrize.id,
+    name: toggledPrize.name,
+    description: toggledPrize.description,
+    cost: toggledPrize.cost,
+    category: toggledPrize.category as Prize['category'],
+    icon: toggledPrize.icon ?? '',
+    available: toggledPrize.available,
+    classId: toggledPrize.class_id ?? undefined,
+    teacherId: toggledPrize.teacher_id ?? undefined,
   };
 }

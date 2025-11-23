@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, isSupabaseConfigured } from '@/lib/utils/env';
+import { Database } from './database.types';
 
 export async function createClient() {
   if (!isSupabaseConfigured()) {
@@ -10,7 +11,7 @@ export async function createClient() {
 
   const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     SUPABASE_URL!,
     SUPABASE_ANON_KEY!,
     {
@@ -24,7 +25,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // The `setAll` method was called from a Server Component.
+            // The setAll method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
           }

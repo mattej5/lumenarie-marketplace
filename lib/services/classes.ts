@@ -35,7 +35,9 @@ export async function getClassesByTeacher(teacherId: string): Promise<Class[]> {
     return [];
   }
 
-  return data.map(cls => ({
+  const classes = (data ?? []) as any[];
+
+  return classes.map((cls) => ({
     id: cls.id,
     teacherId: cls.teacher_id,
     name: cls.name,
@@ -52,7 +54,7 @@ export async function getClassById(classId: string): Promise<Class | null> {
     .from('classes')
     .select('*')
     .eq('id', classId)
-    .single();
+    .single<{ id: string; teacher_id: string; name: string; subject: string; created_at: string }>();
 
   if (error) {
     console.error('Error fetching class:', error);
@@ -82,9 +84,9 @@ export async function createClass(
       teacher_id: teacherId,
       name,
       subject,
-    })
+    } as never)
     .select()
-    .single();
+    .single<{ id: string; teacher_id: string; name: string; subject: string; created_at: string }>();
 
   if (error) {
     console.error('Error creating class:', error);
@@ -115,7 +117,9 @@ export async function getClassMemberships(classId: string): Promise<ClassMembers
     return [];
   }
 
-  return data.map(membership => ({
+  const memberships = (data ?? []) as any[];
+
+  return memberships.map((membership) => ({
     id: membership.id,
     classId: membership.class_id,
     studentId: membership.student_id,
@@ -135,9 +139,9 @@ export async function addStudentToClass(
     .insert({
       student_id: studentId,
       class_id: classId,
-    })
+    } as never)
     .select()
-    .single();
+    .single<{ id: string; class_id: string; student_id: string; joined_at: string }>();
 
   if (error) {
     console.error('Error adding student to class:', error);
@@ -243,7 +247,7 @@ export async function getStudentsWithClassesByTeacher(teacherId: string): Promis
   if (!supabase) throw new Error('Supabase client not configured');
 
   // Get all classes for this teacher
-  const { data: classes, error: classError } = await supabase
+  const { data: classRows, error: classError } = await supabase
     .from('classes')
     .select('id, name, subject')
     .eq('teacher_id', teacherId);
@@ -252,6 +256,8 @@ export async function getStudentsWithClassesByTeacher(teacherId: string): Promis
     console.error('Error fetching teacher classes:', classError);
     return [];
   }
+
+  const classes = Array.isArray(classRows) ? classRows as unknown as { id: string; name: string; subject: Class['subject'] }[] : [];
 
   const classIds = classes.map(c => c.id);
 
@@ -314,3 +320,5 @@ export async function getStudentsWithClassesByTeacher(teacherId: string): Promis
   // Sort students by name
   return Array.from(studentMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
+
+

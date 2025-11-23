@@ -46,7 +46,7 @@ const SUBJECT_OPTIONS = [
   { value: 'both', label: 'Both' },
 ];
 
-export default function ClassManagement({ user }: Props) {
+export default function ClassManagement({ user: _user }: Props) {
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);

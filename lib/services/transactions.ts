@@ -1,6 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { Transaction } from '@/lib/types';
 
+type TransactionRow = {
+  id: string;
+  account_id: string;
+  user_id: string;
+  type: string;
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  reason: string | null;
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+};
+
 /**
  * Transaction Service
  * Handles all transaction-related database operations
@@ -58,7 +72,9 @@ export async function getTransactionsByAccount(
     return [];
   }
 
-  return data.map(tx => ({
+  const transactionRows = (data ?? []) as unknown as TransactionRow[];
+
+  return transactionRows.map(tx => ({
     id: tx.id,
     accountId: tx.account_id,
     userId: tx.user_id,
@@ -66,8 +82,8 @@ export async function getTransactionsByAccount(
     amount: tx.amount,
     balanceBefore: tx.balance_before,
     balanceAfter: tx.balance_after,
-    reason: tx.reason,
-    notes: tx.notes,
+    reason: tx.reason ?? undefined,
+    notes: tx.notes ?? undefined,
     createdBy: tx.created_by,
     createdAt: new Date(tx.created_at),
   }));
@@ -97,7 +113,9 @@ export async function getTransactionsByUser(
     return [];
   }
 
-  return data.map(tx => ({
+  const transactionRows = (data ?? []) as unknown as TransactionRow[];
+
+  return transactionRows.map(tx => ({
     id: tx.id,
     accountId: tx.account_id,
     userId: tx.user_id,
@@ -105,8 +123,8 @@ export async function getTransactionsByUser(
     amount: tx.amount,
     balanceBefore: tx.balance_before,
     balanceAfter: tx.balance_after,
-    reason: tx.reason,
-    notes: tx.notes,
+    reason: tx.reason ?? undefined,
+    notes: tx.notes ?? undefined,
     createdBy: tx.created_by,
     createdAt: new Date(tx.created_at),
   }));
@@ -136,7 +154,9 @@ export async function getRecentTransactions(
     return [];
   }
 
-  return data.map(tx => ({
+  const transactionRows = (data ?? []) as unknown as TransactionRow[];
+
+  return transactionRows.map(tx => ({
     id: tx.id,
     accountId: tx.account_id,
     userId: tx.user_id,
@@ -144,8 +164,8 @@ export async function getRecentTransactions(
     amount: tx.amount,
     balanceBefore: tx.balance_before,
     balanceAfter: tx.balance_after,
-    reason: tx.reason,
-    notes: tx.notes,
+    reason: tx.reason ?? undefined,
+    notes: tx.notes ?? undefined,
     createdBy: tx.created_by,
     createdAt: new Date(tx.created_at),
   }));
@@ -166,18 +186,20 @@ export async function getTransactionById(transactionId: string): Promise<Transac
     return null;
   }
 
+  const transaction = data as unknown as TransactionRow;
+
   return {
-    id: data.id,
-    accountId: data.account_id,
-    userId: data.user_id,
-    type: data.type as Transaction['type'],
-    amount: data.amount,
-    balanceBefore: data.balance_before,
-    balanceAfter: data.balance_after,
-    reason: data.reason,
-    notes: data.notes,
-    createdBy: data.created_by,
-    createdAt: new Date(data.created_at),
+    id: transaction.id,
+    accountId: transaction.account_id,
+    userId: transaction.user_id,
+    type: transaction.type as Transaction['type'],
+    amount: transaction.amount,
+    balanceBefore: transaction.balance_before,
+    balanceAfter: transaction.balance_after,
+    reason: transaction.reason ?? undefined,
+    notes: transaction.notes ?? undefined,
+    createdBy: transaction.created_by,
+    createdAt: new Date(transaction.created_at),
   };
 }
 
@@ -205,7 +227,9 @@ export async function getTransactionsByClass(
     return [];
   }
 
-  return data.map(tx => ({
+  const transactionRows = (data ?? []) as unknown as TransactionRow[];
+
+  return transactionRows.map(tx => ({
     id: tx.id,
     accountId: tx.account_id,
     userId: tx.user_id,
@@ -213,8 +237,8 @@ export async function getTransactionsByClass(
     amount: tx.amount,
     balanceBefore: tx.balance_before,
     balanceAfter: tx.balance_after,
-    reason: tx.reason,
-    notes: tx.notes,
+    reason: tx.reason ?? undefined,
+    notes: tx.notes ?? undefined,
     createdBy: tx.created_by,
     createdAt: new Date(tx.created_at),
   }));

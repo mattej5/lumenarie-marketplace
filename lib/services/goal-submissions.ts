@@ -61,7 +61,9 @@ export async function createGoalSubmissions(
     points: i.points ?? 0,
   }));
 
-  const { data, error } = await supabase
+  const supabaseClient = supabase as any;
+
+  const { data, error } = await supabaseClient
     .from('goal_submissions')
     .insert(payload)
     .select('*');
@@ -86,4 +88,6 @@ export async function createGoalSubmissions(
     updatedAt: new Date(s.updated_at),
   }));
 }
+
+
 

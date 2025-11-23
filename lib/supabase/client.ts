@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, isSupabaseConfigured } from '@/lib/utils/env';
+import { Database } from './database.types';
 
 export function createClient() {
   if (!isSupabaseConfigured()) {
@@ -8,7 +9,7 @@ export function createClient() {
     return null;
   }
 
-  return createBrowserClient(
+  return createBrowserClient<Database>(
     SUPABASE_URL!,
     SUPABASE_ANON_KEY!
   );

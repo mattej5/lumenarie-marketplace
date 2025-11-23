@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       .from('classes')
       .select('teacher_id')
       .eq('id', classId)
-      .single();
+      .single<{ teacher_id: string }>();
 
     if (classError || !classData) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       .rpc('add_student_to_class', {
         p_class_id: classId,
         p_student_id: studentId,
-      });
+      } as any);
 
     if (error) {
       console.error('Error assigning student to class:', error);
@@ -77,3 +77,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+

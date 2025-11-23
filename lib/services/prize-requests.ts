@@ -27,9 +27,12 @@ export async function createPrizeRequest(
     throw new Error('Prize not found');
   }
 
+  // Type assertion to fix TypeScript error
+  const prizeData = prize as unknown as { name: string; cost: number };
+
   // Determine the effective cost
-  const isCrowdfunded = prize.cost === 0;
-  const effectiveCost = isCrowdfunded && customAmount !== undefined ? customAmount : prize.cost;
+  const isCrowdfunded = prizeData.cost === 0;
+  const effectiveCost = isCrowdfunded && customAmount !== undefined ? customAmount : prizeData.cost;
 
   // Validate custom amount for crowdfunded prizes
   if (isCrowdfunded && (customAmount === undefined || customAmount < 2)) {
@@ -48,8 +51,11 @@ export async function createPrizeRequest(
     throw new Error('Account not found');
   }
 
+  // Type assertion to fix TypeScript error
+  const accountData = account as unknown as { id: string; balance: number };
+
   // Check if student can afford the prize
-  if (account.balance < effectiveCost) {
+  if (accountData.balance < effectiveCost) {
     throw new Error('Insufficient balance');
   }
 
@@ -60,6 +66,9 @@ export async function createPrizeRequest(
     .eq('id', studentId)
     .single();
 
+  // Type assertion to fix TypeScript error
+  const studentData = student as unknown as { name: string } | null;
+
   // Create the prize request
   const { data, error } = await supabase
     .from('prize_requests')
@@ -67,7 +76,7 @@ export async function createPrizeRequest(
       student_id: studentId,
       prize_id: prizeId,
       class_id: classId,
-      prize_cost: prize.cost,
+      prize_cost: prizeData.cost,
       custom_amount: isCrowdfunded ? customAmount : null,
       reason,
       status: 'pending',
@@ -80,37 +89,40 @@ export async function createPrizeRequest(
     return null;
   }
 
+  // Type assertion to fix TypeScript error
+  const requestData = data as unknown as { id: string; student_id: string; prize_id: string; class_id: string; prize_cost: number; custom_amount: number | null; reason: string | null; status: string; requested_at: string; reviewed_at: string | null; reviewed_by: string | null; review_notes: string | null };
+
   // Immediately deduct the balance (use effective cost)
   const { error: txError } = await supabase.rpc('create_transaction', {
-    p_account_id: account.id,
+    p_account_id: accountData.id,
     p_type: 'prize-redemption',
     p_amount: effectiveCost,
-    p_reason: `Prize request: ${prize.name}${isCrowdfunded ? ' (Crowdfunded)' : ''}`,
-    p_notes: `Prize request ID: ${data.id}${isCrowdfunded ? ` - Custom amount: ${customAmount}` : ''}`,
+    p_reason: `Prize request: ${prizeData.name}${isCrowdfunded ? ' (Crowdfunded)' : ''}`,
+    p_notes: `Prize request ID: ${requestData.id}${isCrowdfunded ? ` - Custom amount: ${customAmount}` : ''}`,
   });
 
   if (txError) {
     console.error('Error creating transaction:', txError);
     // Rollback: delete the prize request
-    await supabase.from('prize_requests').delete().eq('id', data.id);
+    await supabase.from('prize_requests').delete().eq('id', requestData.id);
     throw new Error('Failed to process transaction');
   }
 
   return {
-    id: data.id,
-    studentId: data.student_id,
-    studentName: student?.name || '',
-    prizeId: data.prize_id,
-    prizeName: prize.name,
-    prizeCost: data.prize_cost,
-    customAmount: data.custom_amount,
-    reason: data.reason,
-    status: data.status as PrizeRequest['status'],
-    classId: data.class_id,
-    requestedAt: new Date(data.requested_at),
-    reviewedAt: data.reviewed_at ? new Date(data.reviewed_at) : undefined,
-    reviewedBy: data.reviewed_by,
-    reviewNotes: data.review_notes,
+    id: requestData.id,
+    studentId: requestData.student_id,
+    studentName: studentData?.name || '',
+    prizeId: requestData.prize_id,
+    prizeName: prizeData.name,
+    prizeCost: requestData.prize_cost,
+    customAmount: requestData.custom_amount ?? undefined,
+    reason: requestData.reason ?? undefined,
+    status: requestData.status as PrizeRequest['status'],
+    classId: requestData.class_id,
+    requestedAt: new Date(requestData.requested_at),
+    reviewedAt: requestData.reviewed_at ? new Date(requestData.reviewed_at) : undefined,
+    reviewedBy: requestData.reviewed_by ?? undefined,
+    reviewNotes: requestData.review_notes ?? undefined,
   };
 }
 
@@ -162,14 +174,14 @@ export async function getPrizeRequests(filters?: {
     prizeId: req.prize_id,
     prizeName: req.prize?.name || '',
     prizeCost: req.prize_cost,
-    customAmount: req.custom_amount,
-    reason: req.reason,
+    customAmount: req.custom_amount ?? undefined,
+    reason: req.reason ?? undefined,
     status: req.status as PrizeRequest['status'],
     classId: req.class_id,
     requestedAt: new Date(req.requested_at),
     reviewedAt: req.reviewed_at ? new Date(req.reviewed_at) : undefined,
-    reviewedBy: req.reviewed_by,
-    reviewNotes: req.review_notes,
+    reviewedBy: req.reviewed_by ?? undefined,
+    reviewNotes: req.review_notes ?? undefined,
   }));
 }
 
@@ -220,27 +232,38 @@ export async function denyPrizeRequest(
     throw new Error('Prize request not found');
   }
 
+  const requestData = request as unknown as {
+    student_id: string;
+    class_id: string;
+    prize_cost: number;
+    custom_amount: number | null;
+    prize: { name?: string } | null;
+  };
+
   // Get student's account
   const { data: account } = await supabase
     .from('accounts')
     .select('id')
-    .eq('user_id', request.student_id)
-    .eq('class_id', request.class_id)
+    .eq('user_id', requestData.student_id)
+    .eq('class_id', requestData.class_id)
     .single();
 
   if (!account) {
     throw new Error('Student account not found');
   }
 
+  const accountData = account as unknown as { id: string };
+
   // Determine the refund amount (use custom_amount if it exists, otherwise prize_cost)
-  const refundAmount = request.custom_amount || request.prize_cost;
+  const refundAmount = requestData.custom_amount ?? requestData.prize_cost;
+  const prizeName = requestData.prize?.name || 'Unknown';
 
   // Refund the amount back to the student
   const { error: txError } = await supabase.rpc('create_transaction', {
-    p_account_id: account.id,
+    p_account_id: accountData.id,
     p_type: 'deposit',
     p_amount: refundAmount,
-    p_reason: `Prize request denied: ${(request.prize as any)?.name || 'Unknown'}`,
+    p_reason: `Prize request denied: ${prizeName}`,
     p_notes: `Refund for denied request. Reason: ${reviewNotes}`,
   });
 
@@ -292,21 +315,38 @@ export async function getRequestById(requestId: string): Promise<PrizeRequest | 
     return null;
   }
 
+  const requestData = data as unknown as {
+    id: string;
+    student_id: string;
+    prize_id: string;
+    prize_cost: number;
+    custom_amount: number | null;
+    reason: string | null;
+    status: string;
+    class_id: string;
+    requested_at: string;
+    reviewed_at: string | null;
+    reviewed_by: string | null;
+    review_notes: string | null;
+    student?: { name?: string } | null;
+    prize?: { name?: string } | null;
+  };
+
   return {
-    id: data.id,
-    studentId: data.student_id,
-    studentName: (data as any).student?.name || '',
-    prizeId: data.prize_id,
-    prizeName: (data as any).prize?.name || '',
-    prizeCost: data.prize_cost,
-    customAmount: data.custom_amount,
-    reason: data.reason,
-    status: data.status as PrizeRequest['status'],
-    classId: data.class_id,
-    requestedAt: new Date(data.requested_at),
-    reviewedAt: data.reviewed_at ? new Date(data.reviewed_at) : undefined,
-    reviewedBy: data.reviewed_by,
-    reviewNotes: data.review_notes,
+    id: requestData.id,
+    studentId: requestData.student_id,
+    studentName: requestData.student?.name || '',
+    prizeId: requestData.prize_id,
+    prizeName: requestData.prize?.name || '',
+    prizeCost: requestData.prize_cost,
+    customAmount: requestData.custom_amount ?? undefined,
+    reason: requestData.reason ?? undefined,
+    status: requestData.status as PrizeRequest['status'],
+    classId: requestData.class_id,
+    requestedAt: new Date(requestData.requested_at),
+    reviewedAt: requestData.reviewed_at ? new Date(requestData.reviewed_at) : undefined,
+    reviewedBy: requestData.reviewed_by ?? undefined,
+    reviewNotes: requestData.review_notes ?? undefined,
   };
 }
 
@@ -347,13 +387,13 @@ export async function getRecentReviewedRequests(
     prizeId: req.prize_id,
     prizeName: req.prize?.name || '',
     prizeCost: req.prize_cost,
-    customAmount: req.custom_amount,
-    reason: req.reason,
+    customAmount: req.custom_amount ?? undefined,
+    reason: req.reason ?? undefined,
     status: req.status as PrizeRequest['status'],
     classId: req.class_id,
     requestedAt: new Date(req.requested_at),
     reviewedAt: req.reviewed_at ? new Date(req.reviewed_at) : undefined,
-    reviewedBy: req.reviewed_by,
-    reviewNotes: req.review_notes,
+    reviewedBy: req.reviewed_by ?? undefined,
+    reviewNotes: req.review_notes ?? undefined,
   }));
 }

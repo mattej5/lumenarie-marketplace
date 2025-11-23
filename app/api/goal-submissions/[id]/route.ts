@@ -10,14 +10,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single<{ role: string }>();
 
     // Check submission exists
     const { data: existing } = await supabase
       .from('goal_submissions')
       .select('id, student_id, class_id, status, created_at')
       .eq('id', id)
-      .single();
+      .single<{ id: string; student_id: string; class_id: string; status: string; created_at: string }>();
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const body = await request.json();
@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         .from('classes')
         .select('teacher_id')
         .eq('id', existing.class_id)
-        .single();
+        .single<{ teacher_id: string }>();
       if (!clazz || clazz.teacher_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
       updates.reviewed_by = user.id;
@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             .from('goal_submissions')
             .select('points, student_id, class_id, goal:goals(title)')
             .eq('id', id)
-            .single();
+            .single<{ points: number | null; student_id: string; class_id: string; goal: { title: string } | null }>();
 
           if (submission) {
             // Get student's account
@@ -54,17 +54,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
               .select('id')
               .eq('user_id', submission.student_id)
               .eq('class_id', submission.class_id)
-              .single();
+              .single<{ id: string }>();
 
             if (account) {
               // Add points to balance
-              const { error: txError } = await supabase.rpc('create_transaction', {
+                            const { error: txError } = await supabase.rpc('create_transaction', {
                 p_account_id: account.id,
                 p_type: 'deposit',
                 p_amount: submission.points,
                 p_reason: `Goal completed: ${(submission.goal as any)?.title || 'Unknown'}`,
                 p_notes: `Goal submission approved`,
-              });
+              } as any);
 
               if (txError) {
                 console.error('Error creating transaction:', txError);
@@ -96,7 +96,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { data, error } = await supabase
       .from('goal_submissions')
-      .update(updates)
+      .update(updates as never)
       .eq('id', id)
       .select('*')
       .single();
@@ -118,14 +118,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single<{ role: string }>();
 
     // Check submission exists
     const { data: existing } = await supabase
       .from('goal_submissions')
       .select('id, student_id, class_id, status, created_at')
       .eq('id', id)
-      .single();
+      .single<{ id: string; student_id: string; class_id: string; status: string; created_at: string }>();
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     if (profile?.role === 'teacher') {
@@ -134,7 +134,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
         .from('classes')
         .select('teacher_id')
         .eq('id', existing.class_id)
-        .single();
+        .single<{ teacher_id: string }>();
       if (!clazz || clazz.teacher_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     } else if (profile?.role === 'student') {
       // Students can delete their own pending submissions from today
@@ -160,3 +160,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     return NextResponse.json({ error: e.message || 'Failed to delete submission' }, { status: 500 });
   }
 }
+
+
+
+
+

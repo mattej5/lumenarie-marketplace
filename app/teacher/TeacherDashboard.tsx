@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LogOut, Users, TrendingUp, Award, GraduationCap, BookOpen, Filter, Target, ClipboardList } from 'lucide-react';
+import { LogOut, Users, TrendingUp, Award, GraduationCap, BookOpen, Target, ClipboardList } from 'lucide-react';
+import { shouldUseMockAuth } from '@/lib/utils/env';
 import Link from 'next/link';
 import Image from 'next/image';
 import StudentOverviewGrid from '@/components/teacher/StudentOverviewGrid';
@@ -37,8 +38,35 @@ export default function TeacherDashboard({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
   const [filteredStats, setFilteredStats] = useState<DashboardStats>(stats);
-  const [loadingStats, setLoadingStats] = useState(false);
+  const [_loadingStats, setLoadingStats] = useState(false);
   const { signOut } = useAuth();
+  const useMockAuth = shouldUseMockAuth();
+
+  const filteredAccounts = useMemo(() => (
+    selectedClassId === 'all'
+      ? accounts
+      : accounts.filter(acc => acc.classId === selectedClassId)
+  ), [accounts, selectedClassId]);
+
+  const filteredStudents = useMemo(() => (
+    selectedClassId === 'all'
+      ? students
+      : students.filter(student => filteredAccounts.some(acc => acc.userId === student.id))
+  ), [filteredAccounts, selectedClassId, students]);
+
+  const filteredPrizeRequests = useMemo(() => (
+    selectedClassId === 'all'
+      ? prizeRequests
+      : prizeRequests.filter(request => request.classId === selectedClassId)
+  ), [prizeRequests, selectedClassId]);
+
+  const filteredGoalSubmissions = useMemo(() => (
+    selectedClassId === 'all'
+      ? goalSubmissions
+      : goalSubmissions.filter(submission => submission.classId === selectedClassId)
+  ), [goalSubmissions, selectedClassId]);
+
+
 
   const handleSignOut = async () => {
     // Call client-side signOut so AuthContext clears user immediately.
@@ -64,6 +92,23 @@ export default function TeacherDashboard({
     : null;
 
   useEffect(() => {
+    if (useMockAuth) {
+      const totalFunds = filteredAccounts.reduce((sum, acc) => sum + acc.balance, 0);
+      const averageBalance = filteredAccounts.length > 0
+        ? Math.floor(totalFunds / filteredAccounts.length)
+        : 0;
+
+      setFilteredStats({
+        totalStudents: filteredStudents.length,
+        totalFunds,
+        averageBalance,
+        pendingRequests: filteredPrizeRequests.filter(r => r.status === 'pending').length,
+        approvedToday: filteredPrizeRequests.filter(r => r.status === 'approved').length,
+        totalTransactions: stats.totalTransactions,
+      });
+      return;
+    }
+
     const fetchStats = async () => {
       if (selectedClassId === 'all') {
         setFilteredStats(stats);
@@ -85,7 +130,7 @@ export default function TeacherDashboard({
     };
 
     fetchStats();
-  }, [selectedClassId, stats]);
+  }, [useMockAuth, selectedClassId, stats, filteredAccounts, filteredPrizeRequests, filteredStudents]);
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -102,7 +147,7 @@ export default function TeacherDashboard({
                 {user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('/')) ? (
                   <Image src={user.avatar} alt={user.name} width={48} height={48} className="w-full h-full object-cover" />
                 ) : (
-                  <span>{user.avatar || '🌟'}</span>
+                  <span>{user.avatar || 'dYOY'}</span>
                 )}
               </div>
               <div>
@@ -116,15 +161,8 @@ export default function TeacherDashboard({
                 href="/teacher/classes"
                 className="flex items-center gap-2 glass hover:glass-strong px-4 py-2 rounded-lg transition-all"
               >
-                <BookOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">Classes</span>
-              </Link>
-              <Link
-                href="/teacher/students"
-                className="flex items-center gap-2 glass hover:glass-strong px-4 py-2 rounded-lg transition-all"
-              >
                 <GraduationCap className="w-4 h-4" />
-                <span className="hidden sm:inline">Students</span>
+                <span className="hidden sm:inline">Classes</span>
               </Link>
               <Link
                 href="/teacher/prizes"
@@ -132,6 +170,13 @@ export default function TeacherDashboard({
               >
                 <Award className="w-4 h-4" />
                 <span className="hidden sm:inline">Prizes</span>
+              </Link>
+              <Link
+                href="/teacher/classes/create"
+                className="flex items-center gap-2 glass hover:glass-strong px-4 py-2 rounded-lg transition-all"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden sm:inline">Create Class</span>
               </Link>
               <Link
                 href="/teacher/goals"
@@ -157,24 +202,6 @@ export default function TeacherDashboard({
             </div>
           </div>
 
-          {/* Class Filter */}
-          <div className="mb-4 flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="glass px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cosmic-500 bg-gray-900/50 text-white [&>option]:text-gray-900 [&>option]:bg-white"
-            >
-              <option value="all">All Classes</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name} ({cls.subject})
-                </option>
-              ))}
-            </select>
-            {loadingStats && <span className="text-xs text-gray-400">Loading...</span>}
-          </div>
-
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="glass rounded-xl p-4">
@@ -198,7 +225,7 @@ export default function TeacherDashboard({
                 <Award className="w-4 h-4 text-starlight-400" />
                 <span className="text-xs text-gray-400">Prize Requests</span>
               </div>
-              <p className="text-2xl font-bold">{prizeRequests.filter(r => r.status === 'pending').length}</p>
+              <p className="text-2xl font-bold">{filteredPrizeRequests.filter(r => r.status === 'pending').length}</p>
             </div>
 
             <div className="glass rounded-xl p-4">
@@ -206,12 +233,12 @@ export default function TeacherDashboard({
                 <Target className="w-4 h-4 text-indigo-400" />
                 <span className="text-xs text-gray-400">Goal Submissions</span>
               </div>
-              <p className="text-2xl font-bold">{goalSubmissions.length}</p>
+              <p className="text-2xl font-bold">{filteredGoalSubmissions.length}</p>
             </div>
 
             <div className="glass rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm">💰</span>
+                <span className="text-sm">dY'?</span>
                 <span className="text-xs text-gray-400">Total Funds</span>
               </div>
               <p className="text-2xl font-bold">{filteredStats.totalFunds.toLocaleString()}</p>
@@ -227,13 +254,16 @@ export default function TeacherDashboard({
           <StudentOverviewGrid
             students={students}
             accounts={accounts}
+            classes={classes}
+            selectedClassId={selectedClassId}
+            onChangeClass={setSelectedClassId}
             onSelectStudent={handleSelectStudent}
           />
         </div>
 
         {/* Right Column - Prize Requests */}
         <div>
-          <PrizeRequestQueue requests={prizeRequests} />
+          <PrizeRequestQueue requests={filteredPrizeRequests} />
         </div>
       </div>
 
@@ -255,8 +285,17 @@ export default function TeacherDashboard({
         transition={{ delay: 0.5 }}
         className="max-w-7xl mx-auto mt-12 text-center text-gray-500 text-sm"
       >
-        <p>Lumenarie Bank System • Astronomy & Earth Science 🌟</p>
+        <p>Lumenarie Bank System ??? Astronomy & Earth Science dYOY</p>
       </motion.footer>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

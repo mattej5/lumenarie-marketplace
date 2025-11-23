@@ -1,4 +1,5 @@
 import { User, Account, Transaction, Prize, PrizeRequest, DashboardStats } from './types';
+import type { Class, ClassMembership } from './types';
 
 // Mock Users (Students and Teacher)
 export const mockUsers: User[] = [
@@ -134,16 +135,95 @@ export const mockUsers: User[] = [
   },
 ];
 
+export const mockClasses: Class[] = [
+  {
+    id: 'class-1',
+    teacherId: 'teacher-1',
+    name: 'Cosmic Explorers',
+    subject: 'astronomy',
+    schoolYear: '2024-2025',
+    colorTheme: '#7c3aed',
+    active: true,
+    createdAt: new Date('2024-08-15'),
+    updatedAt: new Date('2024-08-15'),
+  },
+  {
+    id: 'class-2',
+    teacherId: 'teacher-1',
+    name: 'Earth Guardians',
+    subject: 'earth-science',
+    schoolYear: '2024-2025',
+    colorTheme: '#16a34a',
+    active: true,
+    createdAt: new Date('2024-08-16'),
+    updatedAt: new Date('2024-08-16'),
+  },
+  {
+    id: 'class-3',
+    teacherId: 'teacher-1',
+    name: 'Horizon Scholars',
+    subject: 'both',
+    schoolYear: '2024-2025',
+    colorTheme: '#0ea5e9',
+    active: true,
+    createdAt: new Date('2024-08-17'),
+    updatedAt: new Date('2024-08-17'),
+  },
+];
+
+const studentPrimaryClass: Record<string, string> = {
+  'student-1': 'class-1',
+  'student-2': 'class-1',
+  'student-3': 'class-1',
+  'student-4': 'class-1',
+  'student-5': 'class-2',
+  'student-6': 'class-2',
+  'student-7': 'class-1',
+  'student-8': 'class-2',
+  'student-9': 'class-2',
+  'student-10': 'class-2',
+  'student-11': 'class-3',
+  'student-12': 'class-3',
+  'student-13': 'class-2',
+  'student-14': 'class-3',
+  'student-15': 'class-3',
+};
+
+export const mockClassMemberships: ClassMembership[] = [
+  { id: 'membership-1-1', classId: 'class-1', studentId: 'student-1', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-1-2', classId: 'class-1', studentId: 'student-2', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-1-3', classId: 'class-1', studentId: 'student-3', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-1-4', classId: 'class-1', studentId: 'student-4', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-1-7', classId: 'class-1', studentId: 'student-7', role: 'student', joinedAt: new Date('2024-09-03') },
+  { id: 'membership-2-5', classId: 'class-2', studentId: 'student-5', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-2-6', classId: 'class-2', studentId: 'student-6', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-2-8', classId: 'class-2', studentId: 'student-8', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-2-9', classId: 'class-2', studentId: 'student-9', role: 'student', joinedAt: new Date('2024-09-04') },
+  { id: 'membership-2-10', classId: 'class-2', studentId: 'student-10', role: 'student', joinedAt: new Date('2024-09-04') },
+  { id: 'membership-2-13', classId: 'class-2', studentId: 'student-13', role: 'student', joinedAt: new Date('2024-09-05') },
+  { id: 'membership-3-11', classId: 'class-3', studentId: 'student-11', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-3-12', classId: 'class-3', studentId: 'student-12', role: 'student', joinedAt: new Date('2024-09-02') },
+  { id: 'membership-3-14', classId: 'class-3', studentId: 'student-14', role: 'student', joinedAt: new Date('2024-09-03') },
+  { id: 'membership-3-15', classId: 'class-3', studentId: 'student-15', role: 'student', joinedAt: new Date('2024-09-03') },
+  // A few multi-class examples
+  { id: 'membership-1-11', classId: 'class-1', studentId: 'student-11', role: 'student', joinedAt: new Date('2024-09-06') },
+  { id: 'membership-3-1', classId: 'class-3', studentId: 'student-1', role: 'student', joinedAt: new Date('2024-09-06') },
+];
+
 // Mock Accounts
 export const mockAccounts: Account[] = mockUsers
   .filter(u => u.role === 'student')
-  .map((user, index) => ({
-    id: `account-${user.id}`,
-    userId: user.id,
-    balance: Math.floor(Math.random() * 1000) + 100, // Random balance between 100-1100
-    currency: index % 2 === 0 ? 'star-credits' : 'earth-points',
-    lastUpdated: new Date(),
-  }));
+  .map((user, index) => {
+    const classId = studentPrimaryClass[user.id];
+    return {
+      id: `account-${user.id}`,
+      userId: user.id,
+      classId,
+      balance: Math.floor(Math.random() * 1000) + 100, // Random balance between 100-1100
+      currency: index % 2 === 0 ? 'star-credits' : 'earth-points',
+      lastUpdated: new Date(),
+    };
+  });
 
 // Mock Prizes
 export const mockPrizes: Prize[] = [
@@ -319,6 +399,7 @@ export const mockPrizeRequests: PrizeRequest[] = [
     prizeId: 'prize-3',
     prizeName: 'Galaxy Pencil Set',
     prizeCost: 250,
+    classId: studentPrimaryClass['student-1'],
     reason: 'I really love astronomy and would use these every day!',
     status: 'pending',
     requestedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
@@ -330,6 +411,7 @@ export const mockPrizeRequests: PrizeRequest[] = [
     prizeId: 'prize-5',
     prizeName: 'Rock Collection Kit',
     prizeCost: 300,
+    classId: studentPrimaryClass['student-5'],
     reason: 'Want to study minerals at home',
     status: 'pending',
     requestedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
@@ -341,6 +423,7 @@ export const mockPrizeRequests: PrizeRequest[] = [
     prizeId: 'prize-1',
     prizeName: 'Homework Pass',
     prizeCost: 150,
+    classId: studentPrimaryClass['student-2'],
     status: 'approved',
     requestedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
     reviewedAt: new Date(Date.now() - 20 * 60 * 60 * 1000),
@@ -354,6 +437,7 @@ export const mockPrizeRequests: PrizeRequest[] = [
     prizeId: 'prize-7',
     prizeName: 'Telescope Time',
     prizeCost: 350,
+    classId: studentPrimaryClass['student-7'],
     reason: 'I want to observe Jupiter and its moons!',
     status: 'pending',
     requestedAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
@@ -365,6 +449,7 @@ export const mockPrizeRequests: PrizeRequest[] = [
     prizeId: 'prize-6',
     prizeName: 'Extra Credit Points',
     prizeCost: 400,
+    classId: studentPrimaryClass['student-11'],
     status: 'denied',
     requestedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     reviewedAt: new Date(Date.now() - 2.5 * 24 * 60 * 60 * 1000),
@@ -409,3 +494,8 @@ export const getPrizeRequestsByStudentId = (studentId: string): PrizeRequest[] =
 export const getPrizeById = (id: string): Prize | undefined => {
   return mockPrizes.find(p => p.id === id);
 };
+
+
+
+
+

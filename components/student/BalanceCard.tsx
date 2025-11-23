@@ -15,7 +15,7 @@ export default function BalanceCard({ account }: Readonly<BalanceCardProps>) {
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [cardHeight, setCardHeight] = useState<number>(0);
-  const [iconSize, setIconSize] = useState<number>(24);
+  const [_iconSize, setIconSize] = useState<number>(24);
 
   useEffect(() => {
     const controls = animate(count, account.balance, {

@@ -10,10 +10,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single<{ role: string }>();
     if (!profile || profile.role !== 'teacher') return NextResponse.json({ error: 'Only teachers can update goals' }, { status: 403 });
 
-    const { data: existing } = await supabase.from('goals').select('id, teacher_id').eq('id', id).single();
+    const { data: existing } = await supabase.from('goals').select('id, teacher_id').eq('id', id).single<{ id: string; teacher_id: string }>();
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (existing.teacher_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -28,7 +28,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.available !== undefined) updates.available = !!body.available;
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'No valid fields' }, { status: 400 });
 
-    const { data, error } = await supabase.from('goals').update(updates).eq('id', id).select('*').single();
+    const { data, error } = await supabase.from('goals').update(updates as never).eq('id', id).select('*').single<{ id: string; title: string; description: string | null; points: number; available: boolean; teacher_id: string | null; created_at: string; updated_at: string }>();
     if (error || !data) return NextResponse.json({ error: 'Update failed' }, { status: 500 });
 
     // Update class mappings if provided
@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       await supabase.from('goal_classes').delete().eq('goal_id', id);
       if (classIds.length > 0) {
         const rows = classIds.map((cid) => ({ goal_id: id, class_id: cid }));
-        await supabase.from('goal_classes').insert(rows);
+        await supabase.from('goal_classes').insert(rows as never[]);
       }
     }
 
@@ -72,7 +72,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!supabase) return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const { data: existing } = await supabase.from('goals').select('id, teacher_id').eq('id', id).single();
+    const { data: existing } = await supabase.from('goals').select('id, teacher_id').eq('id', id).single<{ id: string; teacher_id: string }>();
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (existing.teacher_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { error } = await supabase.from('goals').delete().eq('id', id);
@@ -83,3 +83,5 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: e.message || 'Failed to delete goal' }, { status: 500 });
   }
 }
+
+

@@ -24,7 +24,7 @@ export async function POST(
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     if (!profile || profile.role !== 'teacher') {
       return NextResponse.json({ error: 'Only teachers can deny prize requests' }, { status: 403 });
@@ -52,3 +52,4 @@ export async function POST(
     }, { status: 500 });
   }
 }
+

@@ -22,7 +22,7 @@ export async function getAccountByUserId(
     query = query.eq('class_id', classId);
   }
 
-  const { data, error } = await query.single();
+  const { data, error } = await query.single<{ id: string; user_id: string; class_id: string | null; balance: number; currency: string; last_updated: string }>();
 
   if (error) {
     console.error('Error fetching account:', error);
@@ -32,7 +32,7 @@ export async function getAccountByUserId(
   return {
     id: data.id,
     userId: data.user_id,
-    classId: data.class_id,
+    classId: data.class_id || undefined,
     balance: data.balance,
     currency: data.currency as 'star-credits' | 'earth-points',
     lastUpdated: new Date(data.last_updated),
@@ -54,10 +54,11 @@ export async function getAccountsByClass(classId: string): Promise<Account[]> {
     return [];
   }
 
-  return data.map(account => ({
+  const accounts = (data ?? []) as any[];
+  return accounts.map((account) => ({
     id: account.id,
     userId: account.user_id,
-    classId: account.class_id,
+    classId: account.class_id || undefined,
     balance: account.balance,
     currency: account.currency as 'star-credits' | 'earth-points',
     lastUpdated: new Date(account.last_updated),
@@ -78,10 +79,11 @@ export async function getAccountsByUserId(userId: string): Promise<Account[]> {
     return [];
   }
 
-  return data.map(account => ({
+  const accounts = (data ?? []) as any[];
+  return accounts.map((account) => ({
     id: account.id,
     userId: account.user_id,
-    classId: account.class_id,
+    classId: account.class_id || undefined,
     balance: account.balance,
     currency: account.currency as 'star-credits' | 'earth-points',
     lastUpdated: new Date(account.last_updated),
@@ -100,7 +102,7 @@ export async function createAccountForStudent(
     .from('classes')
     .select('subject')
     .eq('id', classId)
-    .single();
+    .single<{ subject: string | null }>();
 
   const currency = classData?.subject === 'astronomy'
     ? 'star-credits'
@@ -115,9 +117,9 @@ export async function createAccountForStudent(
       class_id: classId,
       balance: 0,
       currency,
-    })
+    } as never)
     .select()
-    .single();
+    .single<{ id: string; user_id: string; class_id: string; balance: number; currency: string; last_updated: string }>();
 
   if (error) {
     console.error('Error creating account:', error);
@@ -127,7 +129,7 @@ export async function createAccountForStudent(
   return {
     id: data.id,
     userId: data.user_id,
-    classId: data.class_id,
+    classId: data.class_id || undefined,
     balance: data.balance,
     currency: data.currency as 'star-credits' | 'earth-points',
     lastUpdated: new Date(data.last_updated),
@@ -142,7 +144,7 @@ export async function getAccountBalance(accountId: string): Promise<number | nul
     .from('accounts')
     .select('balance')
     .eq('id', accountId)
-    .single();
+    .single<{ balance: number }>();
 
   if (error) {
     console.error('Error fetching balance:', error);
@@ -166,12 +168,16 @@ export async function getAllAccounts(): Promise<Account[]> {
     return [];
   }
 
-  return data.map(account => ({
+  const accounts = (data ?? []) as any[];
+  return accounts.map((account) => ({
     id: account.id,
     userId: account.user_id,
-    classId: account.class_id,
+    classId: account.class_id || undefined,
     balance: account.balance,
     currency: account.currency as 'star-credits' | 'earth-points',
     lastUpdated: new Date(account.last_updated),
   }));
 }
+
+
+

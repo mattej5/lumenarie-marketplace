@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     const filters: any = {};
     if (profile?.role === 'student') filters.studentId = user.id;
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .single<{ role: string }>();
 
     if (!profile || profile.role !== 'student') {
       return NextResponse.json({ error: 'Only students can submit goals' }, { status: 403 });
@@ -76,4 +76,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: e.message || 'Failed to create submissions' }, { status: 500 });
   }
 }
+
 

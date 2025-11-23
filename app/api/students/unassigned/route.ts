@@ -35,7 +35,7 @@ export async function GET() {
       );
     }
 
-    const enrolledStudentIds = new Set(enrolledStudents.map(m => m.student_id));
+    const enrolledStudentIds = new Set(((enrolledStudents ?? []) as any[]).map((m) => (m as any).student_id));
 
     // Get all students
     const { data: allStudents, error: studentsError } = await supabase
@@ -52,10 +52,11 @@ export async function GET() {
       );
     }
 
-    // Filter out students who are enrolled in any class
-    const unassignedStudents = allStudents.filter(student => !enrolledStudentIds.has(student.id));
+        // Filter out students who are enrolled in any class
+    const studentsList = ((allStudents ?? []) as any[]);
+    const unassignedStudents = studentsList.filter((student) => !enrolledStudentIds.has(student.id));
 
-    const formattedStudents = unassignedStudents.map(student => ({
+    const formattedStudents = unassignedStudents.map((student) => ({
       id: student.id,
       email: student.email,
       name: student.name,
@@ -73,3 +74,6 @@ export async function GET() {
     );
   }
 }
+
+
+

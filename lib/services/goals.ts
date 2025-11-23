@@ -84,7 +84,9 @@ export async function createGoal(teacherId: string, goal: {
   const supabase = await createClient();
   if (!supabase) throw new Error('Supabase client not configured');
 
-  const { data, error } = await supabase
+  const supabaseClient = supabase as any;
+
+  const { data, error } = await supabaseClient
     .from('goals')
     .insert({
       teacher_id: teacherId,
@@ -105,7 +107,7 @@ export async function createGoal(teacherId: string, goal: {
   const classIds = goal.classIds || [];
   if (classIds.length > 0) {
     const rows = classIds.map((cid) => ({ goal_id: data.id, class_id: cid }));
-    const { error: mapErr } = await supabase.from('goal_classes').insert(rows);
+    const { error: mapErr } = await supabaseClient.from('goal_classes').insert(rows);
     if (mapErr) {
       console.error('Error creating goal_classes:', mapErr);
     }
@@ -123,3 +125,4 @@ export async function createGoal(teacherId: string, goal: {
     updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
   };
 }
+

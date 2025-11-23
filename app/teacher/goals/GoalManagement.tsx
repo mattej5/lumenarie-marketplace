@@ -14,7 +14,7 @@ interface Props {
 
 type EditableGoal = Partial<Goal> & { id?: string };
 
-export default function GoalManagement({ user, classes, goals }: Props) {
+export default function GoalManagement({ user: _user, classes, goals }: Props) {
   const [items, setItems] = useState<Goal[]>(goals);
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<'create' | 'edit'>('create');
