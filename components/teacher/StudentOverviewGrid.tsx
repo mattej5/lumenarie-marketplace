@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { TrendingUp, TrendingDown, DollarSign, Filter, Search } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Filter, Search, CheckSquare, Gift, Square } from 'lucide-react';
 import { User, Account } from '@/lib/types';
 import { Class } from '@/lib/services/classes';
+import BulkAwardModal from './BulkAwardModal';
 
 interface StudentOverviewGridProps {
   students: User[];
@@ -25,6 +25,8 @@ export default function StudentOverviewGrid({
   onSelectStudent,
 }: StudentOverviewGridProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const filteredStudents = useMemo(() => {
     const byClass = selectedClassId === 'all'
@@ -43,13 +45,13 @@ export default function StudentOverviewGrid({
     );
   }, [accounts, searchTerm, selectedClassId, students]);
 
-  const getAccountForStudent = (studentId: string) => {
+  const getAccountForStudent = useCallback((studentId: string) => {
     return accounts.find(a => {
       if (a.userId !== studentId) return false;
       if (selectedClassId === 'all') return true;
       return a.classId === selectedClassId;
     });
-  };
+  }, [accounts, selectedClassId]);
 
   const sortedStudents = useMemo(() => {
     return [...filteredStudents].sort((a, b) => {
@@ -58,7 +60,7 @@ export default function StudentOverviewGrid({
       if (!accountA || !accountB) return 0;
       return accountB.balance - accountA.balance;
     });
-  }, [filteredStudents]);
+  }, [filteredStudents, getAccountForStudent]);
 
   const filteredAccounts = useMemo(() => {
     return accounts.filter(acc => {
@@ -72,6 +74,30 @@ export default function StudentOverviewGrid({
   const averageBalance = filteredAccounts.length > 0
     ? Math.floor(totalBalance / filteredAccounts.length)
     : 0;
+
+  useEffect(() => {
+    setSelectedStudentIds((prev) =>
+      prev.filter((id) => filteredStudents.some((student) => student.id === id))
+    );
+  }, [filteredStudents]);
+
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(studentId)
+        ? prev.filter((id) => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const selectAllVisible = () => {
+    setSelectedStudentIds(
+      filteredStudents
+        .filter((student) => getAccountForStudent(student.id))
+        .map((student) => student.id)
+    );
+  };
+
+  const clearSelection = () => setSelectedStudentIds([]);
 
   return (
     <div className="space-y-6">
@@ -157,6 +183,35 @@ export default function StudentOverviewGrid({
                 ))}
               </select>
             </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={selectAllVisible}
+                className="glass px-3 py-2 rounded-lg text-sm hover:glass-strong transition-all"
+              >
+                Select all
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="glass px-3 py-2 rounded-lg text-sm hover:glass-strong transition-all"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsBulkModalOpen(true)}
+                disabled={selectedStudentIds.length === 0}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all glass ${
+                  selectedStudentIds.length === 0
+                    ? 'opacity-60 cursor-not-allowed'
+                    : 'hover:glass-strong'
+                }`}
+              >
+                <Gift className="w-4 h-4" />
+                Award selected ({selectedStudentIds.length})
+              </button>
+            </div>
           </div>
         </div>
 
@@ -166,6 +221,7 @@ export default function StudentOverviewGrid({
             if (!account) return null;
 
             const isAboveAverage = account.balance > averageBalance;
+            const isSelected = selectedStudentIds.includes(student.id);
 
             return (
               <motion.button
@@ -176,22 +232,27 @@ export default function StudentOverviewGrid({
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSelectStudent(student.id)}
-                className="glass hover:glass-strong rounded-lg p-4 text-left transition-all card-hover"
+                className={`relative glass hover:glass-strong rounded-lg p-4 text-left transition-all card-hover ${
+                  isSelected ? 'ring-2 ring-cosmic-400' : ''
+                }`}
               >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleStudentSelection(student.id);
+                  }}
+                  className="absolute top-3 right-3 glass hover:glass-strong rounded-md p-1.5"
+                  aria-label={isSelected ? 'Deselect student' : 'Select student'}
+                >
+                  {isSelected ? (
+                    <CheckSquare className="w-5 h-5 text-cosmic-300" />
+                  ) : (
+                    <Square className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-14 h-14 rounded-full bg-gradient-cosmic flex items-center justify-center text-2xl overflow-hidden shrink-0">
-                    {student.avatar && (student.avatar.startsWith('http') || student.avatar.startsWith('/')) ? (
-                      <Image
-                        src={student.avatar}
-                        alt={student.name}
-                        width={56}
-                        height={56}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span>{student.avatar || 'dY`\u000f'}</span>
-                    )}
-                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
@@ -202,11 +263,6 @@ export default function StudentOverviewGrid({
                           {student.email}
                         </p>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs shrink-0 ${
-                        isAboveAverage ? 'bg-aurora-500/20 text-aurora-300' : 'bg-gray-600/20 text-gray-400'
-                      }`}>
-                        #{index + 1}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -242,6 +298,16 @@ export default function StudentOverviewGrid({
           })}
         </div>
       </div>
+
+      <BulkAwardModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        selectedStudentIds={selectedStudentIds}
+        students={students}
+        accounts={accounts}
+        classes={classes}
+        selectedClassId={selectedClassId}
+      />
     </div>
   );
 }

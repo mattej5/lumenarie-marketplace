@@ -3,14 +3,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LogOut, Users, TrendingUp, Award, GraduationCap, BookOpen, Target, ClipboardList } from 'lucide-react';
+import { LogOut, Award, GraduationCap, BookOpen, Target, ClipboardList } from 'lucide-react';
 import { shouldUseMockAuth } from '@/lib/utils/env';
 import Link from 'next/link';
 import Image from 'next/image';
 import StudentOverviewGrid from '@/components/teacher/StudentOverviewGrid';
 import BalanceManagementModal from '@/components/teacher/BalanceManagementModal';
 import PrizeRequestQueue from '@/components/teacher/PrizeRequestQueue';
-import { User, Account, PrizeRequest, DashboardStats, GoalSubmission } from '@/lib/types';
+import { User, Account, PrizeRequest, GoalSubmission } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Class } from '@/lib/services/classes';
 
@@ -20,7 +20,6 @@ interface TeacherDashboardProps {
   accounts: Account[];
   prizeRequests: PrizeRequest[];
   goalSubmissions: GoalSubmission[];
-  stats: DashboardStats;
   classes: Class[];
 }
 
@@ -30,15 +29,12 @@ export default function TeacherDashboard({
   accounts,
   prizeRequests,
   goalSubmissions,
-  stats,
   classes,
 }: Readonly<TeacherDashboardProps>) {
   const router = useRouter();
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
-  const [filteredStats, setFilteredStats] = useState<DashboardStats>(stats);
-  const [_loadingStats, setLoadingStats] = useState(false);
   const { signOut } = useAuth();
   const useMockAuth = shouldUseMockAuth();
 
@@ -48,25 +44,11 @@ export default function TeacherDashboard({
       : accounts.filter(acc => acc.classId === selectedClassId)
   ), [accounts, selectedClassId]);
 
-  const filteredStudents = useMemo(() => (
-    selectedClassId === 'all'
-      ? students
-      : students.filter(student => filteredAccounts.some(acc => acc.userId === student.id))
-  ), [filteredAccounts, selectedClassId, students]);
-
   const filteredPrizeRequests = useMemo(() => (
     selectedClassId === 'all'
       ? prizeRequests
       : prizeRequests.filter(request => request.classId === selectedClassId)
   ), [prizeRequests, selectedClassId]);
-
-  const filteredGoalSubmissions = useMemo(() => (
-    selectedClassId === 'all'
-      ? goalSubmissions
-      : goalSubmissions.filter(submission => submission.classId === selectedClassId)
-  ), [goalSubmissions, selectedClassId]);
-
-
 
   const handleSignOut = async () => {
     // Call client-side signOut so AuthContext clears user immediately.
@@ -92,46 +74,8 @@ export default function TeacherDashboard({
     : null;
 
   useEffect(() => {
-    if (useMockAuth) {
-      const totalFunds = filteredAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-      const averageBalance = filteredAccounts.length > 0
-        ? Math.floor(totalFunds / filteredAccounts.length)
-        : 0;
-
-      setFilteredStats({
-        totalStudents: filteredStudents.length,
-        totalFunds,
-        averageBalance,
-        pendingRequests: filteredPrizeRequests.filter(r => r.status === 'pending').length,
-        approvedToday: filteredPrizeRequests.filter(r => r.status === 'approved').length,
-        totalTransactions: stats.totalTransactions,
-      });
-      return;
-    }
-
-    const fetchStats = async () => {
-      if (selectedClassId === 'all') {
-        setFilteredStats(stats);
-        return;
-      }
-
-      setLoadingStats(true);
-      try {
-        const response = await fetch(`/api/stats?type=dashboard&classId=${selectedClassId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setFilteredStats(data.stats);
-        }
-      } catch (error) {
-        console.error('Error fetching filtered stats:', error);
-      } finally {
-        setLoadingStats(false);
-      }
-    };
-
-    fetchStats();
-  }, [useMockAuth, selectedClassId, stats, filteredAccounts, filteredPrizeRequests, filteredStudents]);
-
+    if (useMockAuth) return;
+  }, [useMockAuth]);
   return (
     <div className="min-h-screen p-4 md:p-8">
       {/* Header */}
@@ -202,48 +146,7 @@ export default function TeacherDashboard({
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="glass rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-cosmic-400" />
-                <span className="text-xs text-gray-400">Students</span>
-              </div>
-              <p className="text-2xl font-bold">{filteredStats.totalStudents}</p>
-            </div>
-
-            <div className="glass rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-aurora-400" />
-                <span className="text-xs text-gray-400">Avg Balance</span>
-              </div>
-              <p className="text-2xl font-bold">{filteredStats.averageBalance}</p>
-            </div>
-
-            <div className="glass rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="w-4 h-4 text-starlight-400" />
-                <span className="text-xs text-gray-400">Prize Requests</span>
-              </div>
-              <p className="text-2xl font-bold">{filteredPrizeRequests.filter(r => r.status === 'pending').length}</p>
-            </div>
-
-            <div className="glass rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-indigo-400" />
-                <span className="text-xs text-gray-400">Goal Submissions</span>
-              </div>
-              <p className="text-2xl font-bold">{filteredGoalSubmissions.length}</p>
-            </div>
-
-            <div className="glass rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm">dY'?</span>
-                <span className="text-xs text-gray-400">Total Funds</span>
-              </div>
-              <p className="text-2xl font-bold">{filteredStats.totalFunds.toLocaleString()}</p>
-            </div>
-          </div>
+          
         </div>
       </motion.header>
 
@@ -285,7 +188,7 @@ export default function TeacherDashboard({
         transition={{ delay: 0.5 }}
         className="max-w-7xl mx-auto mt-12 text-center text-gray-500 text-sm"
       >
-        <p>Lumenarie Bank System ??? Astronomy & Earth Science dYOY</p>
+        <p>Lumenarie Bank System ??? Astronomy & Earth Science</p>
       </motion.footer>
     </div>
   );

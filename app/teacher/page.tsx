@@ -3,11 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getStudentsByTeacher } from '@/lib/services/profiles';
 import { getAllAccounts } from '@/lib/services/accounts';
 import { getPrizeRequests } from '@/lib/services/prize-requests';
-import { getDashboardStats } from '@/lib/services/stats';
 import { getClassesByTeacher, Class } from '@/lib/services/classes';
 import { getGoalSubmissions } from '@/lib/services/goal-submissions';
 import { shouldUseMockAuth } from '@/lib/utils/env';
-import { mockUsers, mockAccounts, mockPrizeRequests, mockDashboardStats, mockClasses } from '@/lib/mockData';
+import { mockUsers, mockAccounts, mockPrizeRequests, mockClasses } from '@/lib/mockData';
 import { GoalSubmission, PrizeRequest } from '@/lib/types';
 import TeacherDashboard from './TeacherDashboard';
 
@@ -26,7 +25,6 @@ export default async function TeacherPage() {
     const prizeRequests: PrizeRequest[] = mockPrizeRequests ?? [];
     const goalSubmissions: GoalSubmission[] = [];
     const classes: Class[] = mockClasses;
-    const stats = mockDashboardStats;
 
     return (
       <TeacherDashboard
@@ -35,7 +33,6 @@ export default async function TeacherPage() {
         accounts={accounts}
         prizeRequests={prizeRequests}
         goalSubmissions={goalSubmissions}
-        stats={stats}
         classes={classes}
       />
     );
@@ -67,12 +64,11 @@ export default async function TeacherPage() {
   }
 
   // Fetch all data in parallel for better performance
-  const [students, accounts, prizeRequests, goalSubmissions, stats, classes] = await Promise.all([
+  const [students, accounts, prizeRequests, goalSubmissions, classes] = await Promise.all([
     getStudentsByTeacher(user.id),
     getAllAccounts(),
     getPrizeRequests({ status: undefined }), // Get all requests for this teacher's students
     getGoalSubmissions({ status: 'pending' }), // Get pending goal submissions
-    getDashboardStats(user.id),
     getClassesByTeacher(user.id),
   ]);
 
@@ -83,7 +79,6 @@ export default async function TeacherPage() {
       accounts={accounts}
       prizeRequests={prizeRequests}
       goalSubmissions={goalSubmissions}
-      stats={stats}
       classes={classes}
     />
   );
