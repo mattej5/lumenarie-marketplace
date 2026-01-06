@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lumenarie - Student Bank System",
-  description: "Astronomy & Earth Science themed classroom economy system",
+  title: "Lumenarie | Student Bank",
+  description: "Astronomy, Geology & Earth Science themed classroom economy system",
 };
 
 export default function RootLayout({

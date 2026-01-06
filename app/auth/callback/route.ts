@@ -7,8 +7,6 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
-  const next = url.searchParams.get('next') || '/dashboard';
-  const nextPath = next.startsWith('/') ? next : '/dashboard';
 
   if (!code) {
     return NextResponse.redirect(new URL('/login', url), 303);
@@ -98,5 +96,7 @@ export async function GET(request: Request) {
     // don't block login; proceed to app
   }
 
-  return NextResponse.redirect(new URL(nextPath, url), 303);
+  // Redirect based on role
+  const redirectPath = roleToPersist === 'teacher' ? '/teacher' : '/dashboard';
+  return NextResponse.redirect(new URL(redirectPath, url), 303);
 }

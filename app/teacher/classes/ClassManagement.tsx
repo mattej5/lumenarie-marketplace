@@ -28,7 +28,7 @@ import { Edit, Delete, Add } from '@mui/icons-material';
 interface ClassData {
   id: string;
   name: string;
-  subject: 'astronomy' | 'earth-science' | 'both';
+  subject: string;
   school_year?: string;
   color_theme?: string;
   active: boolean;
@@ -41,9 +41,82 @@ interface Props {
 }
 
 const SUBJECT_OPTIONS = [
-  { value: 'astronomy', label: 'Astronomy' },
+  // Sciences
+  { value: 'biology', label: 'Biology' },
+  { value: 'chemistry', label: 'Chemistry' },
+  { value: 'physics', label: 'Physics' },
   { value: 'earth-science', label: 'Earth Science' },
-  { value: 'both', label: 'Both' },
+  { value: 'environmental-science', label: 'Environmental Science' },
+  { value: 'astronomy', label: 'Astronomy' },
+  { value: 'anatomy', label: 'Anatomy & Physiology' },
+  { value: 'marine-biology', label: 'Marine Biology' },
+
+  // Mathematics
+  { value: 'algebra-1', label: 'Algebra I' },
+  { value: 'algebra-2', label: 'Algebra II' },
+  { value: 'geometry', label: 'Geometry' },
+  { value: 'trigonometry', label: 'Trigonometry' },
+  { value: 'pre-calculus', label: 'Pre-Calculus' },
+  { value: 'calculus', label: 'Calculus' },
+  { value: 'statistics', label: 'Statistics' },
+
+  // English/Language Arts
+  { value: 'english-9', label: 'English 9' },
+  { value: 'english-10', label: 'English 10' },
+  { value: 'english-11', label: 'English 11' },
+  { value: 'english-12', label: 'English 12' },
+  { value: 'literature', label: 'Literature' },
+  { value: 'creative-writing', label: 'Creative Writing' },
+  { value: 'journalism', label: 'Journalism' },
+
+  // Social Studies/History
+  { value: 'world-history', label: 'World History' },
+  { value: 'us-history', label: 'U.S. History' },
+  { value: 'government', label: 'Government' },
+  { value: 'civics', label: 'Civics' },
+  { value: 'economics', label: 'Economics' },
+  { value: 'psychology', label: 'Psychology' },
+  { value: 'sociology', label: 'Sociology' },
+  { value: 'geography', label: 'Geography' },
+
+  // Foreign Languages
+  { value: 'spanish', label: 'Spanish' },
+  { value: 'french', label: 'French' },
+  { value: 'german', label: 'German' },
+  { value: 'mandarin', label: 'Mandarin Chinese' },
+  { value: 'latin', label: 'Latin' },
+  { value: 'japanese', label: 'Japanese' },
+
+  // Arts
+  { value: 'art', label: 'Art' },
+  { value: 'music', label: 'Music' },
+  { value: 'band', label: 'Band' },
+  { value: 'choir', label: 'Choir' },
+  { value: 'orchestra', label: 'Orchestra' },
+  { value: 'drama', label: 'Drama/Theater' },
+  { value: 'dance', label: 'Dance' },
+
+  // Technology & Computer Science
+  { value: 'computer-science', label: 'Computer Science' },
+  { value: 'programming', label: 'Programming' },
+  { value: 'web-design', label: 'Web Design' },
+  { value: 'digital-media', label: 'Digital Media' },
+
+  // Physical Education & Health
+  { value: 'physical-education', label: 'Physical Education' },
+  { value: 'health', label: 'Health' },
+
+  // Career & Technical Education
+  { value: 'business', label: 'Business' },
+  { value: 'accounting', label: 'Accounting' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'culinary', label: 'Culinary Arts' },
+  { value: 'automotive', label: 'Automotive Technology' },
+  { value: 'engineering', label: 'Engineering' },
+
+  // Other
+  { value: 'study-skills', label: 'Study Skills' },
+  { value: 'other', label: 'Other' },
 ];
 
 export default function ClassManagement({ user: _user }: Props) {
@@ -54,7 +127,7 @@ export default function ClassManagement({ user: _user }: Props) {
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    subject: 'both' as ClassData['subject'],
+    subject: '',
     school_year: '',
     color_theme: '',
     active: true,
@@ -92,7 +165,7 @@ export default function ClassManagement({ user: _user }: Props) {
       setSelectedClass(null);
       setFormData({
         name: '',
-        subject: 'both',
+        subject: '',
         school_year: '',
         color_theme: '',
         active: true,
@@ -163,20 +236,30 @@ export default function ClassManagement({ user: _user }: Props) {
     {
       field: 'subject',
       headerName: 'Subject',
-      width: 150,
+      width: 180,
       renderCell: (params) => {
-        const colors: Record<string, string> = {
-          astronomy: '#9333ea',
-          'earth-science': '#059669',
-          both: '#3b82f6',
+        // Find the label for the subject
+        const subjectOption = SUBJECT_OPTIONS.find(opt => opt.value === params.value);
+        const label = subjectOption?.label || params.value;
+
+        // Generate a consistent color based on subject value
+        const getColorForSubject = (subject: string) => {
+          const hash = subject.split('').reduce((acc, char) => {
+            return char.charCodeAt(0) + ((acc << 5) - acc);
+          }, 0);
+          const hue = Math.abs(hash) % 360;
+          return `hsl(${hue}, 65%, 50%)`;
         };
+
+        const color = getColorForSubject(params.value);
+
         return (
           <Chip
-            label={params.value}
+            label={label}
             size="small"
             sx={{
-              backgroundColor: colors[params.value] + '20',
-              color: colors[params.value],
+              backgroundColor: color + '20',
+              color: color,
             }}
           />
         );

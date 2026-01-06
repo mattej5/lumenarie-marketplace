@@ -13,14 +13,10 @@ export default function LoginPage() {
   useEffect(() => {
     console.log('[LoginPage] isLoading:', isLoading, 'user:', user?.id, 'role:', user?.role);
     if (!isLoading && user) {
-      // Redirect based on role
-      if (user.role === 'teacher') {
-        console.log('[LoginPage] Redirecting to /teacher');
-        router.push('/teacher');
-      } else {
-        console.log('[LoginPage] Redirecting to /dashboard');
-        router.push('/dashboard');
-      }
+      // Redirect based on role - use replace to prevent back button issues
+      const destination = user.role === 'teacher' ? '/teacher' : '/dashboard';
+      console.log('[LoginPage] Redirecting to', destination);
+      router.replace(destination);
     }
   }, [user, isLoading, router]);
 

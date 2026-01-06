@@ -9,7 +9,7 @@ export interface Class {
   id: string;
   teacherId: string;
   name: string;
-  subject: 'astronomy' | 'earth-science' | 'both';
+  subject: string;
   createdAt: Date;
 }
 
@@ -237,7 +237,7 @@ export interface StudentWithClasses {
   classes: {
     id: string;
     name: string;
-    subject: 'astronomy' | 'earth-science' | 'both';
+    subject: string;
     joinedAt: Date;
   }[];
 }
