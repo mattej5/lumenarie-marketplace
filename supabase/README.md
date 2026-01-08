@@ -154,4 +154,3 @@ Generate strongly-typed Supabase clients from your live schema:
 4. The generated types are written to `lib/supabase/database.types.ts` and automatically used by the client/server helpers.
 
 Re-run the command whenever the database schema changes.
-

@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     const missingAccounts: string[] = [];
     const ambiguousStudents: string[] = [];
     const accountIds: string[] = [];
+    const accountIdToClassId = new Map<string, string | null>();
 
     studentIds.forEach((studentId) => {
       const matches = accounts.filter((acc) => {
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
       }
 
       accountIds.push(matches[0].id);
+      accountIdToClassId.set(matches[0].id, matches[0].class_id);
     });
 
     if (missingAccounts.length > 0) {
@@ -98,16 +100,48 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { error: bulkError } = await supabase.rpc('create_bulk_transactions', {
-      p_account_ids: accountIds,
-      p_amount: amount,
-      p_reason: reason.trim(),
-      p_notes: null,
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('teacher_id', user.id);
+
+    if (classError) {
+      console.error('Error fetching teacher classes for bulk award:', classError);
+      return NextResponse.json({ error: 'Failed to verify class access' }, { status: 500 });
+    }
+
+    const allowedClassIds = new Set((classData ?? []).map((row) => row.id));
+
+    if (classId && !allowedClassIds.has(classId)) {
+      return NextResponse.json({ error: 'Unauthorized class' }, { status: 403 });
+    }
+
+    const unauthorizedAccounts = accountIds.filter((accountId) => {
+      const accountClassId = accountIdToClassId.get(accountId);
+      return !accountClassId || !allowedClassIds.has(accountClassId);
     });
 
-    if (bulkError) {
-      console.error('Bulk award RPC error:', bulkError);
-      return NextResponse.json({ error: bulkError.message || 'Failed to award credits' }, { status: 500 });
+    if (unauthorizedAccounts.length > 0) {
+      return NextResponse.json({
+        error: 'Some students are not in your classes',
+      }, { status: 403 });
+    }
+
+    for (const accountId of accountIds) {
+      const { error: createError } = await supabase.rpc('create_transaction', {
+        p_account_id: accountId,
+        p_type: 'deposit',
+        p_amount: amount,
+        p_reason: reason.trim(),
+        p_notes: null,
+      });
+
+      if (createError) {
+        console.error('Bulk award error:', createError);
+        return NextResponse.json({
+          error: createError.message || 'Failed to award credits',
+        }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
