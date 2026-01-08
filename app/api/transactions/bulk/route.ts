@@ -110,7 +110,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to verify class access' }, { status: 500 });
     }
 
-    const allowedClassIds = new Set((classData ?? []).map((row) => row.id));
+    const classRows = (classData ?? []) as unknown as Array<{ id: string }>;
+    const allowedClassIds = new Set(classRows.map((row) => row.id));
 
     if (classId && !allowedClassIds.has(classId)) {
       return NextResponse.json({ error: 'Unauthorized class' }, { status: 403 });
